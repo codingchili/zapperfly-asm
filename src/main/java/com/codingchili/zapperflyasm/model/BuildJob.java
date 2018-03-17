@@ -19,6 +19,7 @@ public class BuildJob {
     private String commit;
     private Status status = Status.QUEUED;
     private BuildConfiguration config;
+    private String directory;
 
     public BuildJob(BuildConfiguration config) {
         this.config = config;
@@ -130,6 +131,17 @@ public class BuildJob {
      */
     public boolean isAutoclean() {
         return config.isAutoclean();
+    }
+
+    /**
+     * @return the directory where the build is executing.
+     */
+    public String getDirectory() {
+        return directory;
+    }
+
+    public void setDirectory(String directory) {
+        this.directory = directory;
     }
 
     @Override

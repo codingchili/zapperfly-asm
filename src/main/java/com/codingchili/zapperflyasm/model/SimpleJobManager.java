@@ -34,8 +34,6 @@ public class SimpleJobManager implements JobManager {
         jobs.put(job.getId(), job);
         queue.add(job);
 
-        // todo: delay the clone/build part by limiting concurrency in the workers.
-
         // clone the repository and the branch.
         git.clone(job).setHandler(clone -> {
             if (clone.succeeded()) {
@@ -49,14 +47,14 @@ public class SimpleJobManager implements JobManager {
 
     private void handleCompleted(AsyncResult<Void> build, BuildJob job) {
         if (build.succeeded() && job.isAutoclean()) {
-            git.delete(job.getId());
+            git.delete(job);
         }
     }
 
     @Override
     public Future<Void> delete(BuildJob job) {
         Future<Void> future = Future.future();
-        git.delete(job.getId()).setHandler(future);
+        git.delete(job).setHandler(future);
         return future;
     }
 

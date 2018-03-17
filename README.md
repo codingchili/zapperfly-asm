@@ -1,5 +1,5 @@
 
-# zapperfly-asm
+# zapperfly-asm [![Build Status](https://travis-ci.org/codingchili/zapperfly-asm.svg?branch=master)](https://travis-ci.org/codingchili/zapperfly-asm)
 Extra-simple clustered build servers for continuous integration. Minimal configuration required, installation is as simple as starting a Java application. 
 
 Status = IN PROGRESS (no beta yet.)

@@ -21,13 +21,13 @@ import static com.codingchili.core.files.Configurations.*;
  * Main zapperfly service to deploy the REST api and the website.
  */
 public class Service implements CoreService {
-    private Configuration config;
+    private ZapperConfig config;
     private CoreContext core;
     private Logger logger;
 
     @Override
     public void init(CoreContext core) {
-        this.config = Configurations.get(Configuration.PATH, Configuration.class);
+        this.config = Configurations.get(ZapperConfig.PATH, ZapperConfig.class);
         this.core = core;
         this.logger = core.logger(getClass());
     }

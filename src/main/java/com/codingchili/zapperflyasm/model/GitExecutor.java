@@ -1,9 +1,11 @@
 package com.codingchili.zapperflyasm.model;
 
+import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
@@ -11,7 +13,7 @@ import com.codingchili.core.logging.Logger;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Provides cloning functionality for the GIT versioning system.
  */
 public class GitExecutor implements VersionControlSystem {
@@ -32,33 +34,38 @@ public class GitExecutor implements VersionControlSystem {
     @Override
     public Future<String> clone(BuildJob job) {
         Future<String> future = Future.future();
-        job.setStatus(Status.CLONING);
 
-        // git clone -b <branch> <remote_repo> <folder job.getId> .
-        log(job, "cloning");
+        job.setStatus(Status.CLONING);
+        log(job, "cloneBegin");
 
         executor.executeBlocking((blocking) -> {
-            blocking.complete("the random repo folder (id)");
+            job.setDirectory(getDirectory(job));
 
-            log(job, "cloned");
+            try {
+                Process process = new ProcessBuilder(
+                        String.format("git clone -b %s %s %s .",
+                                job.getBranch(),
+                                job.getRepository(),
+                                job.getDirectory())
+                                .split(" "))
+                        .start();
 
-            // log(job, "cloneFail") + errMsg
-
-            // if cloning fails ->
-            //    job.setStatus(Status.FAILED);
-            //    job.setMessage(done.cause().getMessage());
-
-
+                process.waitFor(config().getTimeoutSeconds(), TimeUnit.SECONDS);
+                log(job, "cloneComplete");
+                blocking.complete("the random repo folder (id)");
+            } catch (Throwable e) {
+                job.setStatus(Status.FAILED);
+                job.setMessage(e.getMessage());
+                logError(job, e);
+                throw new CoreRuntimeException(e.getMessage());
+            }
         }, false, future);
 
         return future;
     }
 
-    @Override
-    public Future<Void> delete(BuildJob job) {
-        Future<Void> future = Future.future();
-        vertx.fileSystem().deleteRecursive(job.getId(), true, future);
-        return future;
+    private ZapperConfig config() {
+        return ZapperConfig.get();
     }
 
     @Override
@@ -80,8 +87,19 @@ public class GitExecutor implements VersionControlSystem {
         });
 
         CompositeFuture.all(futures).setHandler(done -> {
-           future.complete(files);
+            future.complete(files);
         });
+        return future;
+    }
+
+    private String getDirectory(BuildJob job) {
+        return ZapperConfig.get().getBuildPath() + "/" + job.getId();
+    }
+
+    @Override
+    public Future<Void> delete(BuildJob job) {
+        Future<Void> future = Future.future();
+        vertx.fileSystem().deleteRecursive(job.getId(), true, future);
         return future;
     }
 
@@ -89,6 +107,14 @@ public class GitExecutor implements VersionControlSystem {
         logger.event(event)
                 .put("repository", job.getRepository())
                 .put("branch", job.getBranch())
+                .send();
+    }
+
+    private void logError(BuildJob job, Throwable e) {
+        logger.event("cloneFailed")
+                .put("repository", job.getRepository())
+                .put("branch", job.getBranch())
+                .put("error", e.getMessage())
                 .send();
     }
 }

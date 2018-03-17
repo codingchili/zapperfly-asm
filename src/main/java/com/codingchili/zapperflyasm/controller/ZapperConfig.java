@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.codingchili.core.configuration.Configurable;
+import com.codingchili.core.files.Configurations;
 
 /**
  * @author Robin Duda
@@ -16,9 +17,11 @@ import com.codingchili.core.configuration.Configurable;
  * That node must be alive when other nodes are starting,
  * but can go offline without interrupting any services.
  */
-public class Configuration implements Configurable {
+public class ZapperConfig implements Configurable {
     public static String PATH = "config.yaml";
     private Map<String, User> users = new HashMap<>();
+    private Integer timeoutSeconds = 300;
+    private String buildPath;
 
     /**
      * @return a list of configured users.
@@ -34,8 +37,37 @@ public class Configuration implements Configurable {
         this.users = users;
     }
 
+    /**
+     * @return the timeout in seconds per build.
+     */
+    public Integer getTimeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    public void setTimeoutSeconds(Integer timeoutSeconds) {
+        this.timeoutSeconds = timeoutSeconds;
+    }
+
     @Override
     public String getPath() {
         return PATH;
+    }
+
+    /**
+     * @return the loaded configuration.
+     */
+    public static ZapperConfig get() {
+        return Configurations.get(PATH, ZapperConfig.class);
+    }
+
+    /**
+     * @return base path for where to store builds.
+     */
+    public String getBuildPath() {
+        return buildPath;
+    }
+
+    public void setBuildPath(String buildPath) {
+        this.buildPath = buildPath;
     }
 }
