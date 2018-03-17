@@ -10,20 +10,19 @@ import com.codingchili.core.context.CoreContext;
 
 /**
  * @author Robin Duda
+ * <p>
+ * Manages jobs - does not support clustering yet.
  */
 public class SimpleJobManager implements JobManager {
-    // todo: implement queueing.
-    // todo: implement clustering.
-    // todo: configuration for parallelism.
     private Queue<BuildJob> queue = new ConcurrentLinkedQueue<>();
     private Map<String, BuildConfiguration> configs = new HashMap<>();
     private Map<String, BuildJob> jobs = new HashMap<>();
-    private GitExecutor git;
-    private BuildExecutor executor;
+    private VersionControlSystem vcs;
+    private ProcessBuilderExecutor executor;
 
     public SimpleJobManager(CoreContext core) {
-        git = new GitExecutor(core);
-        executor = new BuildExecutor(core);
+        vcs = new GitExecutor(core);
+        executor = new ProcessBuilderExecutor(core);
     }
 
     @Override
@@ -35,7 +34,7 @@ public class SimpleJobManager implements JobManager {
         queue.add(job);
 
         // clone the repository and the branch.
-        git.clone(job).setHandler(clone -> {
+        vcs.clone(job).setHandler(clone -> {
             if (clone.succeeded()) {
                 // cloned ok - start building.
                 executor.build(job).setHandler(
@@ -47,20 +46,25 @@ public class SimpleJobManager implements JobManager {
 
     private void handleCompleted(AsyncResult<Void> build, BuildJob job) {
         if (build.succeeded() && job.isAutoclean()) {
-            git.delete(job);
+            vcs.delete(job);
         }
+    }
+
+    @Override
+    public void cancel(BuildJob job) {
+        throw new UnsupportedOperationException("Cancelling builds not implemented yet.");
     }
 
     @Override
     public Future<Void> delete(BuildJob job) {
         Future<Void> future = Future.future();
-        git.delete(job).setHandler(future);
+        vcs.delete(job).setHandler(future);
         return future;
     }
 
     @Override
     public Future<List<String>> artifacts(BuildJob job) {
-        return git.artifacts(job);
+        return vcs.artifacts(job);
     }
 
     @Override
@@ -91,5 +95,9 @@ public class SimpleJobManager implements JobManager {
     @Override
     public Collection<BuildJob> getAll() {
         return jobs.values();
+    }
+
+    public void setVCSProvider(VersionControlSystem vcs) {
+        this.vcs = vcs;
     }
 }

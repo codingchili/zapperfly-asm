@@ -19,6 +19,7 @@ import com.codingchili.core.files.Configurations;
  */
 public class ZapperConfig implements Configurable {
     public static String PATH = "config.yaml";
+    private static ZapperConfig config = null;
     private Map<String, User> users = new HashMap<>();
     private Integer timeoutSeconds = 300;
     private String buildPath;
@@ -57,7 +58,10 @@ public class ZapperConfig implements Configurable {
      * @return the loaded configuration.
      */
     public static ZapperConfig get() {
-        return Configurations.get(PATH, ZapperConfig.class);
+        if (config == null) {
+            config = Configurations.get(PATH, ZapperConfig.class);
+        }
+        return config;
     }
 
     /**

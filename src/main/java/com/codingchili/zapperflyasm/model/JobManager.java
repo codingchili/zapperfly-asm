@@ -22,6 +22,13 @@ public interface JobManager {
     BuildJob submit(BuildConfiguration config);
 
     /**
+     * Cancels a build that is in progress.
+     *
+     * @param buildJob the build job to cancel.
+     */
+    void cancel(BuildJob buildJob);
+
+    /**
      * Removes a build from the history and its files on disk.
      *
      * @param job the job to remove.

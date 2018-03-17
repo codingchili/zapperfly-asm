@@ -39,8 +39,15 @@ public class BuildHandler implements CoreHandler {
     }
 
     @Api
+    @Description("Cancels a scheduled build")
+    public void cancel(BuildRequest request) {
+        manager.cancel(manager.get(request.getBuildId()));
+        request.accept();
+    }
+
+    @Api
     @Description("Deletes the build files for the given job.")
-    public void delete(BuildRequest request) {
+    public void remove(BuildRequest request) {
         manager.delete(manager.get(request.getBuildId()));
         request.accept();
     }
@@ -57,21 +64,12 @@ public class BuildHandler implements CoreHandler {
     @Description("Returns the build status for the given build ID without the build log.")
     public void status(BuildRequest request) {
         BuildJob job = manager.get(request.getBuildId());
-
-        BuildJob data = Serializer.kryo((k) -> {
-            BuildJob copy = k.copy(job);
-
-            // require clients to request the full log explicitly.
-            copy.getLog().clear();
-            return copy;
-        });
-        request.write(data);
+        request.write(job.copyWithoutLog());
     }
 
     @Api
     @Description("Lists all builds that has been executed on the server.")
     public void list(BuildRequest request) {
-        // todo: probably introduce an offset and limit here.
         request.write(
                 manager.getAll().stream()
                         .map(job -> Serializer.kryo(k -> {
@@ -111,5 +109,9 @@ public class BuildHandler implements CoreHandler {
     @Override
     public void handle(Request request) {
         protocol.get(request.route()).submit(new BuildRequest(request));
+    }
+
+    public void setManager(SimpleJobManager manager) {
+        this.manager = manager;
     }
 }

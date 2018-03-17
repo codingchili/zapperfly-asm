@@ -153,4 +153,22 @@ public class BuildJob {
     public boolean equals(Object obj) {
         return (obj instanceof BuildJob) && ((BuildJob) obj).id.equals(id);
     }
+
+    /**
+     * @return creates a copy of this Build without the full log.
+     */
+    public BuildJob copyWithoutLog() {
+        BuildJob clone = new BuildJob(config);
+        clone.id = id;
+        clone.message = message;
+        clone.commit = commit;
+        clone.status = status;
+        clone.config = config;
+        clone.instance = instance;
+        clone.end = end;
+        clone.start = start;
+        clone.directory = directory;
+        clone.outputDirs = outputDirs;
+        return null;
+    }
 }
