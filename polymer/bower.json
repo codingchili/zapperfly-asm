@@ -24,6 +24,7 @@
   ],
   "dependencies": {
     "webcomponentsjs": "webcomponents/webcomponentsjs#^1.1.0",
-    "polymer": "^2.5.0"
+    "polymer": "^2.5.0",
+    "paper-button": "PolymerElements/paper-button#^2.1.0"
   }
 }

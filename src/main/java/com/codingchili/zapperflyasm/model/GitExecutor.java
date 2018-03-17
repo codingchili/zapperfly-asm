@@ -55,9 +55,9 @@ public class GitExecutor implements VersionControlSystem {
     }
 
     @Override
-    public Future<Void> delete(String repositoryId) {
+    public Future<Void> delete(BuildJob job) {
         Future<Void> future = Future.future();
-        vertx.fileSystem().delete(repositoryId, future);
+        vertx.fileSystem().deleteRecursive(job.getId(), true, future);
         return future;
     }
 
