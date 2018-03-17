@@ -1,0 +1,30 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+project.version = "1.0.0-SNAPSHOT"
+project.group = 'com.github.codingchili.zapperfly-asm'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenLocal()
+    maven { url 'https://jitpack.io' }
+    mavenCentral()
+}
+
+test {
+    testLogging {
+        exceptionFormat "full"
+    }
+    reports.html.enabled = false
+}
+
+
+dependencies {
+    compile 'com.github.codingchili.chili-core:core:1.0.21-SNAPSHOT@jar'
+}

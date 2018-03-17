@@ -1,0 +1,40 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="app-view">
+    <template>
+        <style include="shared-styles"></style>
+        <style is="custom-style">
+            :host {
+                display: block;
+                position:absolute;
+                top: 0;
+                left:0;
+                right:0;
+                bottom:0;
+            }
+        </style>
+
+        <!--<app-toolbar class="fixed">
+            <paper-icon-button icon="menu" on-click="drawer"></paper-icon-button>
+            <div class="title" on-click="startpage">[[titletext]]</div>
+        </app-toolbar>-->
+
+        app-view
+
+    </template>
+
+</dom-module>
+<script>
+    class AppView extends Polymer.Element {
+
+        static get is() {
+            return 'app-view';
+        }
+
+        constructor() {
+            super();
+            console.log('appview is loaded as a polymer element');
+        }
+    }
+    window.customElements.define(AppView.is, AppView);
+</script>

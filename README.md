@@ -2,7 +2,7 @@
 # zapperfly-asm
 Extra-simple clustered build servers for continuous integration. Minimal configuration required, installation is as simple as starting a Java application. 
 
-Status = planned
+Status = IN PROGRESS (no beta yet.)
 
 # Building
 The zapperfly.jar is created by executing the following command,
@@ -19,16 +19,14 @@ the cluster name will default to zapperfly-1. Build servers with different group
 
 # Features
 Planned features 😎
-- support for building java projects
-- support for executing builds with the gradle/maven wrapper
+- build any project - as long as build tools are installed on the servers.
 - build scheduling over multiple hosts
 - real time log monitoring
 - downloading of build artifacts
 - support for simple authentication
 
 Features not implemented 😐
-- Building non-java projects
-- Building non maven/gradle projects
+- enterprise-xml-annotations-headache-complexity generator.
 
 Possible features 😰
 - Git repository caching

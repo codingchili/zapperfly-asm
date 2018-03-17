@@ -1,0 +1,29 @@
+{
+  "name": "zapperfly-asm",
+  "homepage": "https://github.com/codingchili/zapperfly-asm",
+  "authors": [
+    "Robin Duda <rduda@kth.se>"
+  ],
+  "description": "Easy to setup clustered build servers!",
+  "main": "index.html",
+  "keywords": [
+    "build",
+    "server",
+    "ci",
+    "clustered",
+    "jenkins"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.1.0",
+    "polymer": "^2.5.0"
+  }
+}
