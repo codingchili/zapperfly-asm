@@ -11,22 +11,25 @@ import com.codingchili.core.logging.Logger;
 
 /**
  * @author Robin Duda
+ *
+ * Provides cloning functionality for the GIT versioning system.
  */
-public class GitExecutor {
+public class GitExecutor implements VersionControlSystem {
     private WorkerExecutor executor;
     private Logger logger;
     private Vertx vertx;
 
 
+    /**
+     * @param core the core context to run the executor on.
+     */
     public GitExecutor(CoreContext core) {
         vertx = core.vertx();
         logger = core.logger(getClass());
         executor = vertx.createSharedWorkerExecutor("git");
     }
 
-    /**
-     * @return
-     */
+    @Override
     public Future<String> clone(BuildJob job) {
         Future<String> future = Future.future();
         job.setStatus(Status.CLONING);
@@ -51,29 +54,15 @@ public class GitExecutor {
         return future;
     }
 
-    private void log(BuildJob job, String event) {
-        logger.event(event)
-                .put("repository", job.getRepository())
-                .put("branch", job.getBranch())
-                .send();
-    }
-
-    /**
-     * @param repositoryId
-     * @return
-     */
+    @Override
     public Future<Void> delete(String repositoryId) {
         Future<Void> future = Future.future();
         vertx.fileSystem().delete(repositoryId, future);
         return future;
     }
 
-    /**
-     *
-     * @param buildJob
-     * @return
-     */
-    public Future<List<String>> ls(BuildJob buildJob) {
+    @Override
+    public Future<List<String>> artifacts(BuildJob buildJob) {
         Future<List<String>> future = Future.future();
         List<Future> futures = new ArrayList<>();
         List<String> files = new ArrayList<>();
@@ -94,5 +83,12 @@ public class GitExecutor {
            future.complete(files);
         });
         return future;
+    }
+
+    private void log(BuildJob job, String event) {
+        logger.event(event)
+                .put("repository", job.getRepository())
+                .put("branch", job.getBranch())
+                .send();
     }
 }

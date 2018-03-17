@@ -1,13 +1,13 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.BuildHandler;
-import com.codingchili.zapperflyasm.controller.Webserver;
+import com.codingchili.zapperflyasm.controller.*;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 
 import java.util.Arrays;
 
 import com.codingchili.core.context.*;
+import com.codingchili.core.files.Configurations;
 import com.codingchili.core.listener.CoreService;
 import com.codingchili.core.listener.ListenerSettings;
 import com.codingchili.core.listener.transport.RestListener;
@@ -21,11 +21,13 @@ import static com.codingchili.core.files.Configurations.*;
  * Main zapperfly service to deploy the REST api and the website.
  */
 public class Service implements CoreService {
+    private Configuration config;
     private CoreContext core;
     private Logger logger;
 
     @Override
     public void init(CoreContext core) {
+        this.config = Configurations.get(Configuration.PATH, Configuration.class);
         this.core = core;
         this.logger = core.logger(getClass());
     }
@@ -37,7 +39,7 @@ public class Service implements CoreService {
                 core.listener(() -> new RestListener()
                         .handler(new BuildHandler())
                         .settings(ListenerSettings::new))
-                    .setHandler(FutureHelper.generic(start))));
+                        .setHandler(FutureHelper.generic(start))));
     }
 
     public static void main(String[] args) {

@@ -8,6 +8,10 @@ import com.codingchili.core.logging.Logger;
 
 /**
  * @author Robin Duda
+ * <p>
+ * Executes builds using the configured command line and uses the
+ * directory that #{@link GitExecutor} cloned the repo/branch into as
+ * the working directory.
  */
 public class BuildExecutor {
     private WorkerExecutor executor;
@@ -20,6 +24,13 @@ public class BuildExecutor {
         this.executor = core.vertx().createSharedWorkerExecutor(getClass().getSimpleName());
     }
 
+    /**
+     * Executes the given build job.
+     *
+     * @param job the build job to be executed. The configured commandline is
+     *            passed to the processbuilder.
+     * @return a future that completes when the build succeeds or fails.
+     */
     public Future<Void> build(BuildJob job) {
         Future<Void> future = Future.future();
         job.setStatus(Status.BUILDING);

@@ -6,7 +6,7 @@ import com.codingchili.core.protocol.Serializer;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Maps requests to ease retrieval of attributes in the API.
  */
 public class BuildRequest extends RequestWrapper {
@@ -15,22 +15,37 @@ public class BuildRequest extends RequestWrapper {
         super(request);
     }
 
+    /**
+     * @return the id of the build the request regards.
+     */
     public String getBuildId() {
         return data().getString("build");
     }
 
+    /**
+     * @return the line number offset for log data to be returned.
+     */
     public int getLogOffset() {
         return data().getInteger("log");
     }
 
+    /**
+     * @return a configuration object from the client if present.
+     */
     public BuildConfiguration getConfiguration() {
         return Serializer.unpack(data().getJsonObject("config"), BuildConfiguration.class);
     }
 
+    /**
+     * @return the repository the request regards.
+     */
     public String getRepository() {
         return data().getString("repository");
     }
 
+    /**
+     * @return the branch to execute on.
+     */
     public String getBranch() {
         return data().getString("branch");
     }

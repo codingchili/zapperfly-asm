@@ -1,77 +1,76 @@
 package com.codingchili.zapperflyasm.model;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import com.codingchili.core.context.CoreContext;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Robin Duda
+ * <p>
+ * Interface for the build manager.
  */
-public class JobManager {
-    // todo: implement queueing.
-    // todo: implement clustering.
-    // todo: configuration for parallelism.
-    private Queue<BuildJob> queue = new ConcurrentLinkedQueue<>();
-    private Map<String, BuildConfiguration> configs = new HashMap<>();
-    private Map<String, BuildJob> jobs = new HashMap<>();
-    private GitExecutor git;
-    private BuildExecutor executor;
-
-    public JobManager(CoreContext core) {
-        git = new GitExecutor(core);
-        executor = new BuildExecutor(core);
-    }
+public interface JobManager {
 
     /**
-     * @return
+     * Schedules a build for execution on the repo and branch in the given config.
+     *
+     * @param config specifies which repo and on which branch to execute the configured
+     *               command line. Also includes the artifact output folders.
+     * @return the job that was scheduled.
      */
-    public BuildJob submit(BuildConfiguration config) {
-        BuildJob job = new BuildJob(config);
+    BuildJob submit(BuildConfiguration config);
 
-        // add the job to the queue.
-        jobs.put(job.getId(), job);
-        queue.add(job);
+    /**
+     * Removes a build from the history and its files on disk.
+     *
+     * @param job the job to remove.
+     * @return callback: completed on deletion.
+     */
+    Future<Void> delete(BuildJob job);
 
-        // todo: delay the clone/build part by limiting concurrency in the workers.
+    /**
+     * Lists available artifacts for the given job.
+     *
+     * @param job the job to list artifacts for.
+     * @return callback: a list of files available for download.
+     */
+    Future<List<String>> artifacts(BuildJob job);
 
-        // clone the repository and the branch.
-        git.clone(job).setHandler(clone -> {
-            if (clone.succeeded()) {
-                // cloned ok - start building.
-                executor.build(job).setHandler(
-                        (done) -> handleCompleted(done, job));
-            }
-        });
-        return job;
-    }
+    /**
+     * Returns build information for the given build ID.
+     *
+     * @param buildId the ID of the build to retrieve.
+     * @return a build matching the given build ID.
+     */
+    BuildJob get(String buildId);
 
-    private void handleCompleted(AsyncResult<Void> build, BuildJob job) {
-        if (build.succeeded() && job.isAutoclean()) {
-            git.delete(job.getId());
-        }
-    }
+    /**
+     * Adds configuration for a repo and branch combination.
+     *
+     * @param config the configuration to add.
+     */
+    void putConfig(BuildConfiguration config);
 
-    public Future<List<String>> artifacts(String buildId) {
-        return git.ls(jobs.get(buildId));
-    }
+    /**
+     * Removes configuration for the given repo and branch.
+     *
+     * @param repository the repo to remove configuration for.
+     * @param branch     the branch to remove configuration for.
+     */
+    void removeConfig(String repository, String branch);
 
-    public void putConfig(BuildConfiguration config) {
-        configs.put(config.getId(), config);
-    }
+    /**
+     * Retrieves configuration for the given repo and branch.
+     *
+     * @param repository the repository to retrieve config of.
+     * @param branch     the branch to retrieve config of.
+     * @return build configuration for the given combination of repo and branch.
+     */
+    BuildConfiguration getConfig(String repository, String branch);
 
-    public void removeConfig(String repository, String branch) {
-        configs.remove(BuildConfiguration.toKey(repository, branch));
-    }
-
-    public BuildConfiguration getConfig(String repository, String branch) {
-        return configs.get(BuildConfiguration.toKey(repository, branch));
-    }
-
-    public BuildJob get(String build) {
-        return jobs.get(build);
-    }
+    /**
+     * @return all builds that has ever been scheduled.
+     */
+    Collection<BuildJob> getAll();
 }
