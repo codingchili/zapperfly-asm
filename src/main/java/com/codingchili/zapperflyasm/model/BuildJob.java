@@ -171,4 +171,11 @@ public class BuildJob {
         clone.outputDirs = outputDirs;
         return null;
     }
+
+    /**
+     * @param cmdLine the commandline to execute when starting the build.
+     */
+    public void setCmdLine(String cmdLine) {
+        config.setCmdLine(cmdLine);
+    }
 }

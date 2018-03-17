@@ -1,3 +1,2 @@
-# we use the cd operation as its most likely available on both win/unix.
 # the directory should not exist - which causes an erroneous return code.
 cd FAIL_THE_SCRIPT

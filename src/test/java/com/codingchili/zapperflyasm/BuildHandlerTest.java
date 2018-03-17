@@ -4,7 +4,7 @@ import com.codingchili.zapperflyasm.controller.BuildHandler;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.codingchili.zapperflyasm.model.SimpleJobManager;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.rxjava.ext.unit.TestContext;
+import io.vertx.ext.unit.TestContext;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
@@ -16,6 +16,7 @@ import com.codingchili.core.context.SystemContext;
  *
  * Tests for the build handler.
  */
+@Ignore("not implemented yet.")
 @RunWith(VertxUnitRunner.class)
 public class BuildHandlerTest {
     private BuildHandler handler = new BuildHandler();
@@ -23,7 +24,7 @@ public class BuildHandlerTest {
     private CoreContext core;
 
     @Before
-    void setup(TestContext test) {
+    public void setup(TestContext test) {
         core = new SystemContext();
         config.setBuildPath("test/resources/");
         config.setTimeoutSeconds(5);
@@ -36,22 +37,22 @@ public class BuildHandlerTest {
     }
 
     @After
-    void tearDown(TestContext test) {
+    public void tearDown(TestContext test) {
         core.close(test.asyncAssertSuccess());
     }
 
     @Test
-    void submitBuild() {
+    public void submitBuild() {
         handler.build(null);
     }
 
     @Test
-    void testBuildTimeouts() {
+    public void testBuildTimeouts() {
         handler.build(null);
     }
 
     @Test
-    void cancelBuild() {
+    public void cancelBuild() {
         handler.cancel(null);
     }
 
@@ -61,27 +62,27 @@ public class BuildHandlerTest {
     }
 
     @Test
-    void removeBuild() {
+    public void removeBuild() {
         handler.remove(null);
     }
 
     @Test
-    void listBuildArtifacts() {
+    public void listBuildArtifacts() {
         handler.list(null);
     }
 
     @Test
-    void getBuildLog() {
+    public void getBuildLog() {
         handler.log(null);
     }
 
     @Test
-    void configureBuild() {
+    public void configureBuild() {
         handler.configure(null);
     }
 
     @Test
-    void unconfigureBuild() {
+    public void unconfigureBuild() {
         handler.unconfigure(null);
     }
 }

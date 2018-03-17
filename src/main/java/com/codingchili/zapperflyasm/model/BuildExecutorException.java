@@ -13,7 +13,7 @@ public class BuildExecutorException extends CoreRuntimeException {
      * @param job the job that failed execution.
      */
     public BuildExecutorException(BuildJob job, int statusCode) {
-        super(String.format("Build %s failed to execute on branch %s in repo %s." +
+        super(String.format("Build %s failed to execute on branch %s in repo %s. " +
                         "Build exited with status '%d'.",
                 job.getId(), job.getBranch(), job.getRepository(), statusCode));
     }

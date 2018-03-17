@@ -1,2 +1,0 @@
-# we use the sleep operation as its most likely available on both win/unix.
-sleep 1000

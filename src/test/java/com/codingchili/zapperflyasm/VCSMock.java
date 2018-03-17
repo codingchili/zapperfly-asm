@@ -13,11 +13,9 @@ import com.codingchili.core.context.CoreContext;
  * We simplify things and mock the git in our unit tests.
  */
 public class VCSMock implements VersionControlSystem {
-    private CoreContext core;
     private GitExecutor git;
 
     public VCSMock(CoreContext core) {
-        this.core = core;
         this.git = new GitExecutor(core);
     }
 
@@ -25,7 +23,7 @@ public class VCSMock implements VersionControlSystem {
     public Future<String> clone(BuildJob job) {
         // clone functionality not supported in unit tests :)
         Future<String> future = Future.future();
-        future.complete("test/resources/");
+        future.complete(TestConfig.TEST_DIR + "/" + job.getId());
         return future;
     }
 

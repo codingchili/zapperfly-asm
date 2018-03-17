@@ -1,0 +1,2 @@
+# sleep for five seconds to trigger the timeout check.
+sleep 5

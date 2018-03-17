@@ -5,7 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.WorkerExecutor;
 
 import java.io.*;
-import java.util.concurrent.TimeUnit;
+import java.time.ZonedDateTime;
 
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
@@ -20,13 +20,16 @@ import com.codingchili.core.logging.Logger;
  * the working directory.
  */
 public class ProcessBuilderExecutor implements BuildExecutor {
+    private static final int PROCESS_POLL_DELAY = 1000;
     private WorkerExecutor executor;
+    private CoreContext core;
     private Logger logger;
 
     /**
      * The core context to execute builds on.
      */
     public ProcessBuilderExecutor(CoreContext core) {
+        this.core = core;
         this.logger = core.logger(getClass());
         this.executor = core.vertx().createSharedWorkerExecutor(getClass().getSimpleName());
     }
@@ -43,29 +46,53 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                         .directory(new File(job.getDirectory()))
                         .start();
 
+                monitorProcessTimeout(process, blocking, job);
+
                 String line;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 while ((line = reader.readLine()) != null) {
                     job.getLog().add(line);
-                }
-
-                process.waitFor(config().getTimeoutSeconds(), TimeUnit.SECONDS);
-
-                if (process.exitValue() == 0) {
-                    logEvent("buildComplete", job);
-                    blocking.complete();
-                } else {
-                    blocking.fail(new BuildExecutorException(job, process.exitValue()));
                 }
             } catch (Throwable e) {
                 logError(job, e);
                 blocking.fail(new CoreRuntimeException(e.getMessage()));
             }
             job.setStatus(Status.DONE);
-            future.complete();
         }, false, future);
 
         return future;
+    }
+
+    private void monitorProcessTimeout(Process process, Future<Void> blocking, BuildJob job) {
+        core.periodic(() -> PROCESS_POLL_DELAY, "processPoller", (id) -> {
+            try {
+                int exitCode = process.exitValue();
+
+                // process is finished - retrieved exit code without error.
+                core.cancel(id);
+
+                if (exitCode == 0) {
+                    logEvent("buildComplete", job);
+                    blocking.complete();
+                } else {
+                    Throwable error = new BuildExecutorException(job, process.exitValue());
+                    logError(job, error);
+                    blocking.fail(error);
+                }
+            } catch (IllegalThreadStateException e) {
+                // process not finished yet - if timeout then fail.
+                if (timeout(job)) {
+                    core.cancel(id);
+                    blocking.fail(new BuildTimeoutException(job));
+                    process.destroyForcibly();
+                    logEvent("buildTimeout", job);
+                }
+            }
+        });
+    }
+
+    private boolean timeout(BuildJob job) {
+        return (ZonedDateTime.now().minusSeconds(config().getTimeoutSeconds()).isAfter(job.getStart()));
     }
 
     private ZapperConfig config() {

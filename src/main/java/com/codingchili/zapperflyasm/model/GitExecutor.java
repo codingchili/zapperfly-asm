@@ -3,12 +3,17 @@ package com.codingchili.zapperflyasm.model;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.*;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
+import com.codingchili.core.logging.LogMessage;
 import com.codingchili.core.logging.Logger;
 
 /**
@@ -36,31 +41,38 @@ public class GitExecutor implements VersionControlSystem {
         Future<String> future = Future.future();
 
         job.setStatus(Status.CLONING);
-        log(job, "cloneBegin");
+        onBegin(job);
 
         executor.executeBlocking((blocking) -> {
             job.setDirectory(getDirectory(job));
 
             try {
                 Process process = new ProcessBuilder(
-                        String.format("git clone -b %s %s %s .",
+                        String.format("git clone -b %s %s %s",
                                 job.getBranch(),
                                 job.getRepository(),
                                 job.getDirectory())
                                 .split(" "))
                         .start();
 
+                logger.log(new BufferedReader(new InputStreamReader(process.getErrorStream())).lines()
+                        .collect(Collectors.joining("\n")));
+
                 process.waitFor(config().getTimeoutSeconds(), TimeUnit.SECONDS);
-                log(job, "cloneComplete");
-                blocking.complete("the random repo folder (id)");
+
+                if (process.exitValue() == 0) {
+                    onCloned(job);
+                    blocking.complete(job.getDirectory());
+                } else {
+                    blocking.fail(new BuildExecutorException(job, process.exitValue()));
+                }
             } catch (Throwable e) {
                 job.setStatus(Status.FAILED);
                 job.setMessage(e.getMessage());
-                logError(job, e);
-                throw new CoreRuntimeException(e.getMessage());
+                onError(job, e);
+                blocking.fail(new CoreRuntimeException(e.getMessage()));
             }
         }, false, future);
-
         return future;
     }
 
@@ -99,22 +111,29 @@ public class GitExecutor implements VersionControlSystem {
     @Override
     public Future<Void> delete(BuildJob job) {
         Future<Void> future = Future.future();
-        vertx.fileSystem().deleteRecursive(job.getId(), true, future);
+        vertx.fileSystem().deleteRecursive(job.getDirectory(), true, future);
         return future;
     }
 
-    private void log(BuildJob job, String event) {
-        logger.event(event)
-                .put("repository", job.getRepository())
-                .put("branch", job.getBranch())
+    private void onCloned(BuildJob job) {
+        event(job, "cloneComplete")
+                .put("directory", job.getDirectory())
                 .send();
     }
 
-    private void logError(BuildJob job, Throwable e) {
-        logger.event("cloneFailed")
-                .put("repository", job.getRepository())
-                .put("branch", job.getBranch())
-                .put("error", e.getMessage())
+    private void onBegin(BuildJob job) {
+        event(job, "onCloneBegin").send();
+    }
+
+    private void onError(BuildJob job, Throwable e) {
+        event(job, "cloneFailed")
+                .put("error", CoreStrings.throwableToString(e))
                 .send();
+    }
+
+    private LogMessage event(BuildJob job, String event) {
+        return logger.event(event)
+                .put("repository", job.getRepository())
+                .put("branch", job.getBranch());
     }
 }

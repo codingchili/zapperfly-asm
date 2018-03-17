@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.codingchili.core.context.CoreContext;
+import com.codingchili.core.context.CoreRuntimeException;
 
 /**
  * @author Robin Duda
@@ -39,6 +40,8 @@ public class SimpleJobManager implements JobManager {
                 // cloned ok - start building.
                 executor.build(job).setHandler(
                         (done) -> handleCompleted(done, job));
+            } else {
+                throw new CoreRuntimeException(clone.cause().getMessage());
             }
         });
         return job;
