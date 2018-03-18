@@ -1,12 +1,15 @@
 package com.codingchili.zapperflyasm.controller;
 
 import com.codingchili.zapperflyasm.model.User;
+import io.vertx.core.Future;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.codingchili.core.configuration.Configurable;
+import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.files.Configurations;
+import com.codingchili.core.storage.*;
 
 /**
  * @author Robin Duda
@@ -21,8 +24,26 @@ public class ZapperConfig implements Configurable {
     public static String PATH = "config.yaml";
     private static ZapperConfig config = null;
     private Map<String, User> users = new HashMap<>();
+    private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
     private String buildPath;
+
+
+    public static <T extends Storable> Future<AsyncStorage<T>> getStorage(CoreContext core,
+                                                                          Class<T> value) {
+        Future<AsyncStorage<T>> future = Future.future();
+        new StorageLoader<T>(core)
+                .withPlugin(get().getStorage())
+                .withValue(value)
+                .build(done -> {
+                    if (done.succeeded()) {
+                        future.complete(done.result());
+                    } else {
+                        future.fail(done.cause());
+                    }
+                });
+        return future;
+    }
 
     /**
      * @return a list of configured users.
@@ -71,7 +92,24 @@ public class ZapperConfig implements Configurable {
         return buildPath;
     }
 
+    /**
+     * @param buildPath the path where builds are cloned into and executed.
+     */
     public void setBuildPath(String buildPath) {
         this.buildPath = buildPath;
+    }
+
+    /**
+     * @return a class that implements AsyncStorage.
+     */
+    public String getStorage() {
+        return storage;
+    }
+
+    /**
+     * @param storage the implementation to use for job and build configuration.
+     */
+    public void setStorage(String storage) {
+        this.storage = storage;
     }
 }

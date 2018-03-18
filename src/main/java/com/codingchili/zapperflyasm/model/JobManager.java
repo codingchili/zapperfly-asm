@@ -19,14 +19,14 @@ public interface JobManager {
      *               command line. Also includes the artifact output folders.
      * @return the job that was scheduled.
      */
-    BuildJob submit(BuildConfiguration config);
+    Future<BuildJob> submit(BuildConfiguration config);
 
     /**
      * Cancels a build that is in progress.
      *
      * @param buildJob the build job to cancel.
      */
-    void cancel(BuildJob buildJob);
+    Future<Void> cancel(BuildJob buildJob);
 
     /**
      * Removes a build from the history and its files on disk.
@@ -50,14 +50,14 @@ public interface JobManager {
      * @param buildId the ID of the build to retrieve.
      * @return a build matching the given build ID.
      */
-    BuildJob get(String buildId);
+    Future<BuildJob> get(String buildId);
 
     /**
      * Adds configuration for a repo and branch combination.
      *
      * @param config the configuration to add.
      */
-    void putConfig(BuildConfiguration config);
+    Future<Void> putConfig(BuildConfiguration config);
 
     /**
      * Removes configuration for the given repo and branch.
@@ -65,7 +65,7 @@ public interface JobManager {
      * @param repository the repo to remove configuration for.
      * @param branch     the branch to remove configuration for.
      */
-    void removeConfig(String repository, String branch);
+    Future<Void> removeConfig(String repository, String branch);
 
     /**
      * Retrieves configuration for the given repo and branch.
@@ -74,10 +74,10 @@ public interface JobManager {
      * @param branch     the branch to retrieve config of.
      * @return build configuration for the given combination of repo and branch.
      */
-    BuildConfiguration getConfig(String repository, String branch);
+    Future<BuildConfiguration> getConfig(String repository, String branch);
 
     /**
      * @return all builds that has ever been scheduled.
      */
-    Collection<BuildJob> getAll();
+    Future<Collection<BuildJob>> getAll();
 }

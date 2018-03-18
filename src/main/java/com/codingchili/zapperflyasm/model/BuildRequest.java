@@ -10,7 +10,16 @@ import com.codingchili.core.protocol.Serializer;
  * Maps requests to ease retrieval of attributes in the API.
  */
 public class BuildRequest extends RequestWrapper {
+    public static final String ID_BUILD = "id";
+    public static final String ID_CONFIG = "config";
+    public static final String ID_REPO = "repository";
+    public static final String ID_BRANCH = "branch";
+    public static final String ID_LOG = "log";
+    public static final String ID_OFFSET = "offset";
 
+    /**
+     * @param request the original request to decorate.
+     */
     public BuildRequest(Request request) {
         super(request);
     }
@@ -19,34 +28,39 @@ public class BuildRequest extends RequestWrapper {
      * @return the id of the build the request regards.
      */
     public String getBuildId() {
-        return data().getString("build");
+        return data().getString(ID_BUILD);
     }
 
     /**
      * @return the line number offset for log data to be returned.
      */
     public int getLogOffset() {
-        return data().getInteger("log");
+        Integer offset = data().getInteger(ID_OFFSET);
+        if (offset == null) {
+            return 0;
+        } else {
+            return offset;
+        }
     }
 
     /**
      * @return a configuration object from the client if present.
      */
     public BuildConfiguration getConfiguration() {
-        return Serializer.unpack(data().getJsonObject("config"), BuildConfiguration.class);
+        return Serializer.unpack(data().getJsonObject(ID_CONFIG), BuildConfiguration.class);
     }
 
     /**
      * @return the repository the request regards.
      */
     public String getRepository() {
-        return data().getString("repository");
+        return data().getString(ID_REPO);
     }
 
     /**
      * @return the branch to execute on.
      */
     public String getBranch() {
-        return data().getString("branch");
+        return data().getString(ID_BRANCH);
     }
 }

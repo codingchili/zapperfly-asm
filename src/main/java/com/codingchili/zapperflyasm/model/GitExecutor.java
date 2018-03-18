@@ -40,17 +40,19 @@ public class GitExecutor implements VersionControlSystem {
     public Future<String> clone(BuildJob job) {
         Future<String> future = Future.future();
 
-        job.setStatus(Status.CLONING);
+        job.setProgress(Status.CLONING);
         onBegin(job);
 
         executor.executeBlocking((blocking) -> {
             job.setDirectory(getDirectory(job));
 
             try {
+                BuildConfiguration config = job.getConfig();
+
                 Process process = new ProcessBuilder(
                         String.format("git clone -b %s %s %s",
-                                job.getBranch(),
-                                job.getRepository(),
+                                config.getBranch(),
+                                config.getRepository(),
                                 job.getDirectory())
                                 .split(" "))
                         .start();
@@ -67,7 +69,7 @@ public class GitExecutor implements VersionControlSystem {
                     blocking.fail(new BuildExecutorException(job, process.exitValue()));
                 }
             } catch (Throwable e) {
-                job.setStatus(Status.FAILED);
+                job.setProgress(Status.FAILED);
                 job.setMessage(e.getMessage());
                 onError(job, e);
                 blocking.fail(new CoreRuntimeException(e.getMessage()));
@@ -86,7 +88,7 @@ public class GitExecutor implements VersionControlSystem {
         List<Future> futures = new ArrayList<>();
         List<String> files = new ArrayList<>();
 
-        buildJob.getOutputDirs().forEach(dir -> {
+        buildJob.getConfig().getOutputDirs().forEach(dir -> {
             Future<List<String>> ls = Future.future();
             vertx.fileSystem().readDir(dir, done -> {
                 if (done.succeeded()) {
@@ -133,7 +135,7 @@ public class GitExecutor implements VersionControlSystem {
 
     private LogMessage event(BuildJob job, String event) {
         return logger.event(event)
-                .put("repository", job.getRepository())
-                .put("branch", job.getBranch());
+                .put("repository", job.getConfig().getRepository())
+                .put("branch", job.getConfig().getBranch());
     }
 }

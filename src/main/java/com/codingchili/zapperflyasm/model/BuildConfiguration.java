@@ -1,11 +1,17 @@
 package com.codingchili.zapperflyasm.model;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.codingchili.core.storage.Storable;
+
 /**
  * @author Robin Duda
  * <p>
  * Contains build configuration for a repo and branch combination.
  */
-public class BuildConfiguration {
+public class BuildConfiguration implements Storable {
+    private List<String> outputDirs = Arrays.asList("out", "build", "target");
     private boolean autoclean = false;
     private String repository;
     private String branch;
@@ -32,11 +38,29 @@ public class BuildConfiguration {
         return autoclean;
     }
 
+    public void setOutputDirs(List<String> outputDirs) {
+        this.outputDirs = outputDirs;
+    }
+
+    /**
+     * @return a list of output paths from where to locate artifacts for download.
+     */
+    public List<String> getOutputDirs() {
+        return outputDirs;
+    }
+
     /**
      * @return the commandline to be executed.
      */
     public String getCmdLine() {
         return cmdLine;
+    }
+
+    /**
+     * @param cmdLine the commandline to execute when starting the build.
+     */
+    public void setCmdLine(String cmdLine) {
+        this.cmdLine = cmdLine;
     }
 
     /**
@@ -67,9 +91,5 @@ public class BuildConfiguration {
 
     public void setBranch(String branch) {
         this.branch = branch;
-    }
-
-    public void setCmdLine(String cmdLine) {
-        this.cmdLine = cmdLine;
     }
 }

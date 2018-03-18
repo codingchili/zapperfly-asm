@@ -71,14 +71,12 @@ public class ProcessBuilderExecutorTest {
     private void setExecutable(String file) {
         String os = System.getProperty("os.name");
 
-        System.err.println(os);
-
         if (os.toLowerCase().contains("windows")) {
             // assume cmd.exe exists on windows.
-            job.setCmdLine("cmd.exe /C " + file + ".bat");
+            job.getConfig().setCmdLine("cmd.exe /C " + file + ".bat");
         } else {
             // assume bash exists on unix.
-            job.setCmdLine("/bin/bash -E " + file + ".sh");
+            job.getConfig().setCmdLine("/bin/bash -E " + file + ".sh");
         }
     }
 }

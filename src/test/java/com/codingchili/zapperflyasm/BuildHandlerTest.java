@@ -2,38 +2,89 @@ package com.codingchili.zapperflyasm;
 
 import com.codingchili.zapperflyasm.controller.BuildHandler;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
-import com.codingchili.zapperflyasm.model.SimpleJobManager;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import com.codingchili.zapperflyasm.model.*;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
+import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.SystemContext;
+import com.codingchili.core.protocol.Serializer;
+import com.codingchili.core.storage.AsyncStorage;
+import com.codingchili.core.storage.JsonMap;
+import com.codingchili.core.testing.RequestMock;
+import com.codingchili.core.testing.ResponseListener;
+
+import static com.codingchili.core.protocol.ResponseStatus.*;
+import static com.codingchili.zapperflyasm.model.BuildRequest.*;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Tests for the build handler.
  */
-@Ignore("not implemented yet.")
 @RunWith(VertxUnitRunner.class)
 public class BuildHandlerTest {
+    private static final String BRANCH = "branch";
+    private static final String REPOSITORY = "repository";
+    public static final String TEST_ID = "TEST";
+    public static final String TEST_DIR = "test_dir";
     private BuildHandler handler = new BuildHandler();
     private ZapperConfig config = ZapperConfig.get();
+    private AsyncStorage<BuildConfiguration> configs;
+    private AsyncStorage<BuildJob> jobs;
     private CoreContext core;
 
     @Before
     public void setup(TestContext test) {
+        Async async = test.async();
         core = new SystemContext();
         config.setBuildPath("test/resources/");
         config.setTimeoutSeconds(5);
         handler.init(core);
 
-        SimpleJobManager manager = new SimpleJobManager(core);
-        manager.setVCSProvider(new VCSMock(core));
+        ZapperConfig.get().setStorage(JsonMap.class.getName());
 
-        handler.setManager(manager);
+        ZapperConfig.getStorage(core, BuildJob.class).setHandler(jobs -> {
+            ZapperConfig.getStorage(core, BuildConfiguration.class).setHandler(configs -> {
+                this.configs = configs.result();
+                this.jobs = jobs.result();
+
+                ClusteredJobManager manager = new ClusteredJobManager(core, this.jobs, this.configs);
+                manager.setVCSProvider(new VCSMock(core));
+                manager.setBuildExecutor(new BuildExecutorMock(true));
+
+                BuildConfiguration build = new BuildConfiguration();
+                build.setRepository(REPOSITORY);
+                build.setBranch(BRANCH);
+                manager.putConfig(build);
+
+                handler.setManager(manager);
+
+                this.jobs.put(getTestBuild(), (done) -> async.complete());
+            });
+        });
+    }
+
+    private BuildJob getTestBuild() {
+        BuildJob job = new BuildJob();
+        job.setId(TEST_ID);
+        job.setCommit("commit");
+        job.setDirectory(TEST_DIR);
+        job.setInstance("localhost");
+        job.setStart(ZonedDateTime.now().toEpochSecond());
+        Collection<String> lines = new ArrayList<>();
+        lines.add("log line 1");
+        job.setLog(lines);
+        return job;
     }
 
     @After
@@ -42,47 +93,109 @@ public class BuildHandlerTest {
     }
 
     @Test
-    public void submitBuild() {
-        handler.build(null);
+    public void submitBuild(TestContext test) {
+        Async async = test.async();
+
+        handler.build(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+            async.complete();
+        }, new JsonObject()
+                .put(REPOSITORY, REPOSITORY)
+                .put(BRANCH, BRANCH)));
     }
 
     @Test
-    public void testBuildTimeouts() {
-        handler.build(null);
+    @Ignore("not supported - yet.")
+    public void cancelBuild(TestContext test) {
+        Async async = test.async();
+
+        handler.cancel(request((response, status) -> {
+            // not implemented yet - expect an error.
+            test.assertEquals(ERROR, status);
+            async.complete();
+        }, new JsonObject().put(ID_BUILD, TEST_ID)));
     }
 
     @Test
-    public void cancelBuild() {
-        handler.cancel(null);
+    public void getBuildStatus(TestContext test) {
+        Async async = test.async();
+
+        handler.status(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+            test.assertEquals(TEST_ID, response.getString(ID_BUILD));
+
+            // no logs should be included when retrieving build status.
+            test.assertTrue(response.getJsonArray(ID_LOG).isEmpty());
+            async.complete();
+        }, new JsonObject()
+                .put(ID_BUILD, TEST_ID)));
     }
 
     @Test
-    void getBuildStatus() {
-        handler.status(null);
+    public void getBuildLog(TestContext test) {
+        Async async = test.async();
+
+        handler.log(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+
+            // logs should be included.
+            test.assertFalse(response.getJsonArray(ID_LOG).isEmpty());
+            async.complete();
+        }, new JsonObject()
+                .put(ID_BUILD, TEST_ID)));
     }
 
     @Test
-    public void removeBuild() {
-        handler.remove(null);
+    public void removeBuild(TestContext test) {
+        Async async = test.async();
+
+        Paths.get(TEST_DIR).toFile().mkdirs();
+
+        handler.remove(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+            async.complete();
+        }, new JsonObject()
+            .put(ID_BUILD, TEST_ID)));
     }
 
     @Test
-    public void listBuildArtifacts() {
-        handler.list(null);
+    public void listBuildArtifacts(TestContext test) {
+        Async async = test.async();
+
+        handler.list(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+            async.complete();
+        }, new JsonObject()
+                .put(ID_BUILD, TEST_ID)));
     }
 
     @Test
-    public void getBuildLog() {
-        handler.log(null);
+    public void configureBuild(TestContext test) {
+        Async async = test.async();
+
+        BuildConfiguration config = new BuildConfiguration();
+        config.setRepository("repo_test");
+        config.setBranch("br_test");
+
+        // and now attempt to remove the configured build.
+        Runnable unconfigure = () -> {
+            handler.unconfigure(request((response, status) -> {
+                test.assertEquals(ACCEPTED, status);
+                async.complete();
+            }, new JsonObject()
+                    .put(ID_REPO, config.getRepository())
+                    .put(ID_BRANCH, config.getBranch())));
+        };
+
+        // configure the build.
+        handler.configure(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+            unconfigure.run();
+        }, new JsonObject()
+                .put(ID_CONFIG, Serializer.json(config))));
     }
 
-    @Test
-    public void configureBuild() {
-        handler.configure(null);
-    }
-
-    @Test
-    public void unconfigureBuild() {
-        handler.unconfigure(null);
+    private BuildRequest request(ResponseListener response, JsonObject data) {
+        return new BuildRequest(RequestMock.get("n/a", response, data));
     }
 }

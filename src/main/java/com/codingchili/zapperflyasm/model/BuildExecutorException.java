@@ -15,6 +15,9 @@ public class BuildExecutorException extends CoreRuntimeException {
     public BuildExecutorException(BuildJob job, int statusCode) {
         super(String.format("Build %s failed to execute on branch %s in repo %s. " +
                         "Build exited with status '%d'.",
-                job.getId(), job.getBranch(), job.getRepository(), statusCode));
+                job.getId(),
+                job.getConfig().getBranch(),
+                job.getConfig().getRepository(),
+                statusCode));
     }
 }

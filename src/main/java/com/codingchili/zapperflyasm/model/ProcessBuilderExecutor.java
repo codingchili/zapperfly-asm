@@ -39,10 +39,10 @@ public class ProcessBuilderExecutor implements BuildExecutor {
         Future<Void> future = Future.future();
 
         executor.executeBlocking(blocking -> {
-            job.setStatus(Status.BUILDING);
+            job.setProgress(Status.BUILDING);
             logEvent("buildBegin", job);
             try {
-                Process process = new ProcessBuilder(job.getCmdLine().split(" "))
+                Process process = new ProcessBuilder(job.getConfig().getCmdLine().split(" "))
                         .directory(new File(job.getDirectory()))
                         .start();
 
@@ -57,7 +57,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                 logError(job, e);
                 blocking.fail(new CoreRuntimeException(e.getMessage()));
             }
-            job.setStatus(Status.DONE);
+            job.setProgress(Status.DONE);
         }, false, future);
 
         return future;
@@ -92,7 +92,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
     }
 
     private boolean timeout(BuildJob job) {
-        return (ZonedDateTime.now().minusSeconds(config().getTimeoutSeconds()).isAfter(job.getStart()));
+        return ZonedDateTime.now().minusSeconds(config().getTimeoutSeconds()).toEpochSecond() > job.getStart();
     }
 
     private ZapperConfig config() {
@@ -100,15 +100,17 @@ public class ProcessBuilderExecutor implements BuildExecutor {
     }
 
     private void logEvent(String event, BuildJob job) {
+        BuildConfiguration config = job.getConfig();
         logger.event(event)
-                .put("repo", job.getRepository())
-                .put("branch", job.getBranch())
-                .put("cmdline", job.getCmdLine())
+                .put("repo", config.getRepository())
+                .put("branch", config.getBranch())
+                .put("cmdline", config.getCmdLine())
                 .send();
     }
 
     private void logError(BuildJob job, Throwable e) {
         logger.event("buildError")
+                .put("build", job.getDirectory())
                 .put("err", CoreStrings.throwableToString(e))
                 .send();
     }
