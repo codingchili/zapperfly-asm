@@ -5,7 +5,8 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,8 @@ import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 import com.codingchili.core.storage.*;
 
+import static com.codingchili.core.protocol.RoleMap.PUBLIC;
+import static com.codingchili.zapperflyasm.model.BuildRequest.ID_LIST;
 import static com.codingchili.zapperflyasm.model.BuildRequest.ID_LOG;
 
 /**
@@ -24,6 +27,7 @@ import static com.codingchili.zapperflyasm.model.BuildRequest.ID_LOG;
  * <p>
  * HTTP REST API for retrieving build status, scheduling and configuring builds.
  */
+@Roles(PUBLIC)
 @Address("builds")
 @Description("Handles configuration and build requests.")
 @DataModel(BuildRequest.class)
@@ -31,6 +35,7 @@ public class BuildHandler implements CoreHandler {
     private Protocol<Request> protocol = new Protocol<>(this);
     private ClusteredJobManager manager;
     private CoreContext core;
+    private AtomicInteger counter = new AtomicInteger(0);
 
     @Override
     public void init(CoreContext core) {
@@ -46,6 +51,49 @@ public class BuildHandler implements CoreHandler {
             if (done.succeeded()) {
                 AsyncStorage<BuildJob> jobs = done.result().resultAt(0);
                 AsyncStorage<BuildConfiguration> configs = done.result().resultAt(1);
+
+                BuildConfiguration config = new BuildConfiguration();
+                config.setRepository("github.com/codingchili/zapper-test.git");
+                config.setBranch("master");
+                config.setOutputDirs(Arrays.asList("out", "build", "target"));
+                config.setCmdLine("gradlew build");
+
+                // add a test job :P
+
+                for (int i = 0; i < 10; i++) {
+                    BuildJob job = new BuildJob();
+                    job.setInstance("zapper1");
+                    job.setCommit("ae910dba");
+                    job.setMessage("GEM-479: added quadruple boosters.");
+                    job.setConfig(config);
+
+                    job.log("line 1");
+                    job.log("line 2");
+                    job.log("line 3");
+
+                    List<Status> statuses = Arrays.asList(Status.values());
+                    Collections.shuffle(statuses);
+                    job.setProgress(statuses.get(0));
+
+                    if (!job.getProgress().equals(Status.BUILDING) && !job.getProgress().equals(Status.CLONING)) {
+                        job.setEnd((new Date().getTime() / 1000) + new Random().nextInt(900));
+                    }
+
+                    jobs.put(job, (put) -> {
+                        if (put.succeeded()) {
+                            System.out.println("created job " + job.getId());
+                        } else {
+                            System.err.println(CoreStrings.throwableToString(put.cause()));
+                        }
+                    });
+
+                   core.periodic(() -> 500, "logger", (d) -> {
+                        jobs.put(job, (put) -> {
+                            job.log("hello " + counter.incrementAndGet());
+                        });
+                    });
+
+                }
 
                 this.manager = new ClusteredJobManager(core, jobs, configs);
                 start.complete();
@@ -85,6 +133,7 @@ public class BuildHandler implements CoreHandler {
         getJob(request, job -> {
             request.write(new JsonObject().put(ID_LOG, job.getLog().stream()
                     .skip(request.getLogOffset())
+                    .map(Serializer::json)
                     .collect(Collectors.toList())));
         });
     }
@@ -100,10 +149,11 @@ public class BuildHandler implements CoreHandler {
     public void list(BuildRequest request) {
         manager.getAll().setHandler(done -> {
             if (done.succeeded()) {
-                request.write(
+                request.write(new JsonObject().put(ID_LIST,
                         done.result().stream()
                                 .map(BuildJob::copyWithoutLog)
-                                .collect(Collectors.toList())
+                                .map(Serializer::json)
+                                .collect(Collectors.toList()))
                 );
             } else {
                 request.error(done.cause());
@@ -133,6 +183,38 @@ public class BuildHandler implements CoreHandler {
     @Description("Removes configuration for the given repository and branch.")
     public void unconfigure(BuildRequest request) {
         manager.removeConfig(request.getRepository(), request.getBranch()).setHandler(request::result);
+    }
+
+    @Api
+    @Description("Lists all available executors.")
+    public void executors(BuildRequest request) {
+        List<ExecutorInfo> executors = new ArrayList<>();
+
+        executors.add(new ExecutorInfo()
+            .setBuilds(2)
+            .setCapacity(3)
+            .setOnline(true)
+            .setInstance("zapper.1"));
+
+        executors.add(new ExecutorInfo()
+                .setBuilds(0)
+                .setCapacity(5)
+                .setOnline(true)
+                .setInstance("zapper.2"));
+
+        executors.add(new ExecutorInfo()
+                .setBuilds(0)
+                .setCapacity(5)
+                .setOnline(false)
+                .setInstance("zapper.3"));
+
+        request.write(executors);
+    }
+
+    @Api
+    @Description("Lists available configurations.")
+    public void configurations(BuildRequest request) {
+        request.write(manager.getAllConfigs());
     }
 
     private void getJob(BuildRequest request, Consumer<BuildJob> consumer) {

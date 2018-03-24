@@ -1,4 +1,11 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="build-queue.html">
+<link rel="import" href="build-stats.html">
+<link rel="import" href="build-view.html">
+<link rel="import" href="build-executors.html">
+<link rel="import" href="loading-spinner.html">
 
 <dom-module id="app-view">
     <template>
@@ -6,22 +13,67 @@
         <style is="custom-style">
             :host {
                 display: block;
-                position:absolute;
-                top: 0;
-                left:0;
-                right:0;
-                bottom:0;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                background-color: var(--primary-background-color);
+                color: var(--primary-text-color);
             }
+
+            .flex {
+                width: 100%;
+                background-color: var(--primary-background-color);
+            }
+
+            @media (min-width: 1024px) {
+                .flex {
+                    display: flex;
+                }
+            }
+
+            @media (max-width: 1024px) {
+                .flex * {
+                    width: 100%;
+                }
+            }
+
+            @media (min-width: 1620px) {
+                .flex {
+                    width: 80%;
+                    margin: auto;
+                }
+            }
+
         </style>
 
-        <!--<app-toolbar class="fixed">
+        <!-- with configuration wheel -->
+        <app-toolbar class="fixed">
             <paper-icon-button icon="menu" on-click="drawer"></paper-icon-button>
             <div class="title" on-click="startpage">[[titletext]]</div>
-        </app-toolbar>-->
+        </app-toolbar>
 
+            <!-- display on top, builds failures etc. -->
+            <build-stats></build-stats>
 
+            <div class="flex">
+                <!-- left sidebar, show queued builds -->
+                <build-queue id="queue"></build-queue>
 
-        app-view
+                <!-- center of screen -->
+                <!-- click on an item to show the build log, back button for list. -->
+                <build-view id="builds"></build-view>
+
+                <!-- right sidebar -->
+                <build-executors id="executors"></build-executors>
+            </div>
+
+        <iron-ajax auto url="https://localhost:8080/?target=builds&route=list" handle-as="json"
+                   on-response="onBuildsDownloaded" debounce-duration="300">
+        </iron-ajax>
+
+        <loading-spinner></loading-spinner>
 
     </template>
 
@@ -35,8 +87,15 @@
 
         constructor() {
             super();
-            console.log('appview is loaded as a polymer element');
+        }
+
+        onBuildsDownloaded(event, request) {
+            this.builds = request.response.list;
+            this.$.queue.setBuilds(this.builds);
+            this.$.builds.setBuilds(this.builds);
         }
     }
     window.customElements.define(AppView.is, AppView);
+
+
 </script>

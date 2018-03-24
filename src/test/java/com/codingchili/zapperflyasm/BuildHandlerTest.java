@@ -155,14 +155,26 @@ public class BuildHandlerTest {
             test.assertEquals(ACCEPTED, status);
             async.complete();
         }, new JsonObject()
-            .put(ID_BUILD, TEST_ID)));
+                .put(ID_BUILD, TEST_ID)));
+    }
+
+
+    @Test
+    public void listBuildHistory(TestContext test) {
+        Async async = test.async();
+
+        handler.list(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+            test.assertTrue(response.getJsonArray(ID_LIST).size() > 0);
+            async.complete();
+        }, new JsonObject()));
     }
 
     @Test
     public void listBuildArtifacts(TestContext test) {
         Async async = test.async();
 
-        handler.list(request((response, status) -> {
+        handler.artifacts(request((response, status) -> {
             test.assertEquals(ACCEPTED, status);
             async.complete();
         }, new JsonObject()

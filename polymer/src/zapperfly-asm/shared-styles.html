@@ -1,0 +1,225 @@
+<!-- shared-styles.html -->
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+
+<dom-module id="shared-styles">
+    <template>
+    </template>
+</dom-module>
+<style>
+
+            * {
+                --primary-text-color: var(--dark-theme-text-color);
+                --primary-background-color: #3E2723;
+                --secondary-text-color: var(--dark-theme-secondary-color);
+                --disabled-text-color: var(--dark-theme-disabled-color);
+                --divider-color: var(--dark-theme-divider-color);
+                --error-color: var(--paper-deep-orange-a700);
+                --primary-color: #2196F3;
+                --secondary-color: var(--paper-indigo-300);
+                --faint-text-color: {
+                    --primary-text-color: var(--light-theme-text-color);
+                    opacity: 0.32;
+                };
+            }
+
+            paper-spinner {
+                --paper-spinner-layer-1-color: var(--secondary-color);
+                --paper-spinner-layer-2-color: var(--primary-color);
+                --paper-spinner-layer-3-color: var(--secondary-color);
+                --paper-spinner-layer-4-color: var(--primary-color);
+            }
+
+            app-drawer {
+                /* --app-drawer-scrim-background: rgba(0, 0, 100, 0.8);*/
+                --app-drawer-content-container: {
+                    background-color: var(--primary-background-color);
+                    color: var(--primary-text-color);
+                }
+            }
+
+            paper-chip {
+                margin: -6px;
+                --paper-chip-label-color: var(--secondary-color);
+                --paper-chip-active-background-color: var(--primary-background-color);
+                --paper-chip-background-color: var(--primary-background-color);
+                --paper-chip-close-color: var(--error-color);
+                --paper-chip-font-size: 0.85em;
+            }
+
+            paper-chip:hover {
+                --paper-chip-label-color: var(--primary-color);
+                transition: --paper-chip-label-color 2s;
+            }
+
+            paper-input {
+                --paper-input-container-focus-color: var(--primary-color);
+                --paper-input-container-invalid-color: var(--primary-color);
+                --paper-input-container-input-color: var(--primary-text-color);
+            }
+
+            paper-button {
+                background-color: var(--primary-color);
+                color: #ffffff;
+                width: 100%;
+                margin-top: 32px;
+                margin-left: 0px;
+                margin-right: 0px;
+            }
+
+            paper-progress {
+                --paper-progress-container-color: var(--primary-background-color);
+                --paper-progress-active-color: var(--primary-color);
+                --paper-progress-secondary-color: var(--secondary-color);
+            }
+
+            .cancel-button {
+                background-color: var(--secondary-color);
+                margin-top: 16px;
+                opacity: 0.6;
+            }
+
+            .button-group {
+                display: block;
+                width: 100%;
+                margin: 24px 0px 0px;
+                padding: 0px;
+                right: 0px;
+                bottom: 0px;
+            }
+
+            paper-item {
+                font-weight: bold;
+            }
+
+            paper-menu > paper-item:hover {
+                background-color: var(--primary-color);
+                color: #ffffff;
+                font-weight: bold;
+                user-select: none;
+                cursor: pointer;
+            }
+
+            app-toolbar {
+                background-color: var(--primary-color);
+                font-family: 'Roboto', Helvetica, sans-serif;
+                color: white;
+                --app-toolbar-font-size: 1.6em;
+            }
+
+            paper-toast {
+                width: 100%;
+                margin: 0px;
+                text-align: center;
+                background-color: var(--secondary-color);
+                color: #ffffff;
+            }
+
+            paper-toast.error {
+                background-color: var(--error-color);
+            }
+
+            paper-input {
+                margin-left: 8px;
+                margin-right: 8px;
+            }
+
+            a:link, a:visited {
+                color: var(--secondary-color) !important;
+                text-decoration: none;
+            }
+
+            a:hover {
+                color: var(--primary-color) !important;
+                text-decoration: none;
+            }
+
+            a:active {
+                color: var(--error-color) !important;
+            }
+
+            #toolbar {
+                display: flex;
+                z-index: 100;
+                position: fixed;
+                top: 0px;
+                right: 0;
+                height: 64px;
+            }
+
+            .toolbar-item {
+                margin: auto;
+                color: #ffffff;
+                min-width: 64px;
+                min-height: 64px;
+                display: flex;
+                cursor: pointer;
+            }
+
+            .toolbar-item > paper-swatch-picker {
+                margin-top: 4px;
+            }
+
+            .toolbar-item > iron-icon {
+                margin: auto;
+            }
+
+            .toolbar-item > iron-icon:hover {
+                color: var(--secondary-color);
+            }
+
+            * {
+                --dialog-min-width: 426px;
+                --paper-dialog-scrollable_-_padding: 0px;
+            }
+
+            paper-dialog-scrollable {
+                --paper-dialog-scrollable: {
+                    padding: 0 10px;
+                };
+            }
+
+            @media screen and (max-width: 518px) {
+                paper-dialog {
+                    top: -64px;
+                    height: auto;
+                    left: 0;
+                    right: 0;
+                    margin: 0;
+                    padding: 0;
+                    position:absolute;
+                    --dialog-min-width: 100%;
+                }
+
+                /* align buttons side by side in dialogs. */
+                .button-group {
+                    display: flex;
+                    flex-direction: row-reverse;
+                }
+
+                paper-button {
+                    margin-top: 0;
+                }
+
+                .cancel-button {
+                    margin-top: 0;
+                }
+
+            }
+
+            @media screen and (min-width: 518px) {
+                paper-dialog {
+                    top: 6vh;
+                }
+            }
+
+            paper-dialog {
+                z-index: 3000;
+                width: var(--dialog-min-width);
+                min-width: var(--dialog-min-width);
+            }
+
+            paper-swatch-picker.color-picker {
+                --paper-swatch-picker-color-size: 20px;
+            }
+
+</style>

@@ -16,6 +16,7 @@ public class BuildRequest extends RequestWrapper {
     public static final String ID_BRANCH = "branch";
     public static final String ID_LOG = "log";
     public static final String ID_OFFSET = "offset";
+    public static final String ID_LIST= "list";
 
     /**
      * @param request the original request to decorate.
@@ -35,11 +36,12 @@ public class BuildRequest extends RequestWrapper {
      * @return the line number offset for log data to be returned.
      */
     public int getLogOffset() {
-        Integer offset = data().getInteger(ID_OFFSET);
+        String offset = data().getString(ID_OFFSET);
+
         if (offset == null) {
             return 0;
         } else {
-            return offset;
+            return Integer.parseInt(offset);
         }
     }
 

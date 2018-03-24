@@ -51,7 +51,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                 String line;
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 while ((line = reader.readLine()) != null) {
-                    job.getLog().add(line);
+                    job.log(line);
                 }
             } catch (Throwable e) {
                 logError(job, e);

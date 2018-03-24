@@ -3,6 +3,7 @@ package com.codingchili.zapperflyasm.model;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.storage.Storable;
 
 /**
@@ -11,13 +12,13 @@ import com.codingchili.core.storage.Storable;
  * Represents a single build that is executing or is to be executed.
  */
 public class BuildJob implements Storable {
-    private Collection<String> log = new ArrayList<>();
+    private Collection<LogEvent> log = new ArrayList<>();
     private BuildConfiguration config;
     private Long start = ZonedDateTime.now().toEpochSecond();
     private Long end;
     private String id = UUID.randomUUID().toString();
+    private String instance = Environment.hostname().orElseGet(() -> UUID.randomUUID().toString());
     private String message;
-    private String instance;
     private String commit;
     private Status progress = Status.QUEUED;
     private String directory;
@@ -42,12 +43,22 @@ public class BuildJob implements Storable {
     /**
      * @return a list of lines that is the output of the build execution.
      */
-    public Collection<String> getLog() {
+    public Collection<LogEvent> getLog() {
         return log;
     }
 
-    public void setLog(Collection<String> log) {
+    public void setLog(Collection<LogEvent> log) {
         this.log = log;
+    }
+
+    /**
+     * @param line a line to log.
+     */
+    public void log(String line) {
+        LogEvent event = new LogEvent();
+        event.setTime(ZonedDateTime.now().toEpochSecond());
+        event.setLine(line);
+        log.add(event);
     }
 
     public void setStart(Long start) {

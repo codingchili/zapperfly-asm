@@ -1,0 +1,99 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="build-queue">
+    <template>
+        <style include="shared-styles"></style>
+        <style is="custom-style">
+            :host {
+                display: block;
+                width: 30%;
+                background-color: var(--primary-background-color);
+            }
+
+            .item {
+                display: flex;
+                margin-top: 4px;
+                margin-left: 6px;
+                margin-right: 6px;
+            }
+
+           .title {
+                text-align: center;
+                display: block;
+           }
+
+           h4 {
+                opacity: 0.85;
+            }
+
+            .build {
+                color: var(--primary-color);
+                cursor: pointer;
+                margin-left: 6px;
+            }
+
+            #spinner {
+                display: block;
+                margin: auto;
+                margin-top: 12px;
+            }
+
+
+        </style>
+
+        <span class="title">
+            <h4>
+                Build queue
+
+                <template is="dom-if" if="[[!started]]">
+                    <paper-spinner id="spinner" active></paper-spinner>
+                </template>
+
+                <template is="dom-if" if="[[started]]">
+                    <iron-icon on-click="clear" class="build icon" icon="av:play-circle-outline"></iron-icon>
+                </template>
+            </h4>
+        </span>
+
+        <template is="dom-repeat" items="{{builds}}" as="build">
+            <template is="dom-if" if="{{_show(build)}}">
+
+                <build-card build="[[build]]"></build-card>
+
+            </template>
+        </template>
+
+    </template>
+</dom-module>
+<script>
+    class BuildQueue extends Polymer.Element {
+
+        static get is() {
+            return 'build-queue';
+        }
+
+        constructor() {
+            super();
+            this.started = false;
+        }
+
+        setBuilds(builds) {
+            if (builds.length > 0) {
+               this.started = true;
+            } else {
+                this.started = false;
+            }
+            this.builds = builds;
+        }
+
+        _show(build) {
+            return (build.progress == 'QUEUED')
+        }
+    }
+    window.customElements.define(BuildQueue.is, BuildQueue);
+
+</script>

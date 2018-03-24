@@ -1,0 +1,178 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-behavior/paper-dialog-behavior.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="build-view">
+    <template>
+        <style include="shared-styles"></style>
+        <style is="custom-style">
+            :host {
+                display: block;
+                width: 40%;
+                height: 100%;
+                text-align: center;
+                min-height: 326px;
+                background-color: var(--primary-background-color);
+            }
+
+            paper-card {
+                width: 100%;
+                height: 100%;
+            }
+
+            h4 {
+                opacity: 0.85;
+            }
+
+            .log {
+                text-align: left;
+                margin-left: 8px;
+                margin-right: 8px;
+            }
+
+            .buttons:hover {
+                cursor: pointer;
+            }
+
+          #spinner {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+          }
+
+          .history {
+            position: absolute;
+            color: var(--primary-color);
+            cursor: pointer;
+            margin-left: 6px;
+            margin-top: -2px;
+          }
+
+          #spinner {
+            margin-top: 12px;
+          }
+
+        </style>
+
+        <h4>
+            Build history
+
+            <template is="dom-if" if="[[!started]]">
+                <paper-spinner id="spinner" active></paper-spinner>
+            </template>
+
+            <template is="dom-if" if="[[started]]">
+                <iron-icon on-click="clear" class="history icon" icon="icons:clear"></iron-icon>
+            </template>
+        </h4>
+
+        <template is="dom-repeat" items="{{builds}}" as="build">
+            <template is="dom-if" if="{{_show(build)}}">
+                <build-card on-click="_onClick" build="[[build]]"></build-card>
+            </template>
+        </template>
+
+        <paper-dialog id="logDialog" with-backdrop>
+            <h2>[[build.message]]</h2>
+            <paper-dialog-scrollable>
+                <div class="log">
+                    <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
+                    <template is="dom-repeat" items="[[build.log]]" as="log">
+                        {{_line()}}: [[log.line]] + [[log.time]]<br>
+                    </template>
+                </div>
+            </paper-dialog-scrollable>
+            <div class="buttons">
+                <paper-button dialog-dismiss on-click="_close">Close</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-ajax id="logLoader"
+                   url="https://localhost:8080/?target=builds&route=log&id=[[build.id]]&offset=[[offset]]"
+                   handle-as="json"
+                   on-response="_onBuildLog" debounce-duration="300">
+        </iron-ajax>
+
+    </template>
+</dom-module>
+<script>
+    class BuildView extends Polymer.Element {
+
+        static get is() {
+            return 'build-view';
+        }
+
+        openDialog() {
+            this.$.dialog.open();
+        }
+
+        constructor() {
+            super();
+            this.started = false;
+
+            setInterval(() => {
+                if (this.build != undefined) {
+                    this._reload();
+                }
+            }, 3000);
+        }
+
+        setBuilds(builds) {
+            if (builds.length > 0) {
+                this.started = true;
+            } else {
+                this.started = false;
+            }
+            this.builds = builds;
+        }
+
+        _onClick(e) {
+            this.loading = true;
+            this.line = 0;
+            this.offset = 0;
+            this.build = e.model.build;
+            this.build.log = [];
+            this.$.logDialog.open();
+            this._reload();
+        }
+
+        _onBuildLog(event, request) {
+            this.build.log.push(...request.response.log);
+            this.offset += request.response.log.length;
+            this.notifyPath('build.log');
+            this.$.logDialog.notifyResize();
+            this.loading = false;
+        }
+
+        _reload() {
+            this.$.logLoader.generateRequest();
+        }
+
+        _show(build) {
+            return (build.progress != 'QUEUED')
+        }
+
+        _line() {
+            return this.line++;
+        }
+
+        _close() {
+            this.build = null;
+        }
+    }
+    window.customElements.define(BuildView.is, BuildView);
+
+
+
+
+
+
+
+
+
+
+</script>

@@ -77,6 +77,13 @@ public interface JobManager {
     Future<BuildConfiguration> getConfig(String repository, String branch);
 
     /**
+     * Lists all available configurations.
+     *
+     * @return all configurations that exists.
+     */
+    Future<Collection<BuildConfiguration>> getAllConfigs();
+
+    /**
      * @return all builds that has ever been scheduled.
      */
     Future<Collection<BuildJob>> getAll();

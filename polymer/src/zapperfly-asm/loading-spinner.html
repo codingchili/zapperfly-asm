@@ -1,0 +1,77 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="loading-spinner">
+    <template>
+        <style include="shared-styles"></style>
+        <style>
+            :host {
+                display: block;
+                z-index: 9000;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, 0);
+                pointer-events: none;
+            }
+
+            #spinner {
+                opacity: 1;
+            }
+
+            #spinner.fade {
+                opacity: 0;
+                transition: opacity 0.5s;
+            }
+
+        </style>
+        <paper-spinner id="spinner" class$="{{getLoadingAnimation(loading)}}"
+                       active="[[loading]]">
+        </paper-spinner>
+    </template>
+    <script>
+        class LoadingSpinner extends Polymer.Element {
+            static get is() {
+                return 'loading-spinner';
+            }
+
+            static get properties() {
+              return {
+                build: {
+                  type: Object,
+                  notify: true
+                }
+              }
+            }
+
+            constructor() {
+                super();
+                this.loading = false;
+                application.subscribe(LOADING, (is) => {
+                    this.loading = is;
+
+                    if (is) {
+                        this.toggled = false;
+                        setTimeout(() => {
+                            // if the spinner has not been toggled in the last 5
+                            // seconds, consider the loading to have timed out.
+                            if (!this.toggled) {
+                                this.loading = false;
+                            }
+                        }, 5000);
+                    } else {
+                        this.loading = false;
+                        this.toggled = true;
+                    }
+                });
+            }
+
+            getLoadingAnimation() {
+                return (this.loading) ? '' : 'fade';
+            }
+        }
+        window.customElements.define(LoadingSpinner.is, LoadingSpinner);
+
+    </script>
+</dom-module>

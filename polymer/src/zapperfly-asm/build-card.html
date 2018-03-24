@@ -1,0 +1,261 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="build-card">
+    <template>
+        <style include="shared-styles"></style>
+        <style is="custom-style">
+            :host {
+                display: block;
+            }
+
+            .item {
+                display: flex;
+                margin-top: 4px;
+                margin-left: 6px;
+                margin-right: 6px;
+                background-color: var(--primary-background-color);
+                cursor: pointer;
+            }
+
+            .item:hover {
+                opacity: 0.5;
+                transition: opacity 0.2s;
+            }
+
+            .commit {
+                position: absolute;
+                right: 0px;
+                margin-top: 58px;
+                margin-right: 8px;
+                font-size: 0.8em;
+                opacity: 0.50;
+            }
+
+            .message {
+                text-align: left;
+                position: absolute;
+                left: 12px;
+                right: 18px;
+                margin-top: 4px;
+                font-size: 0.90em;
+                opacity: 0.85;
+            }
+
+            .branch {
+                left: 12px;
+                position: absolute;
+                margin-top: 58px;
+                font-size: 0.8em;
+                opacity: 0.50;
+            }
+
+            .elapsed {
+                position: absolute;
+                font-size: 0.8em;
+                right: 6px;
+                margin-top: 42px;
+                opacity: 0.50;
+            }
+
+           .title {
+                text-align: center;
+                display: block;
+           }
+
+            .icon {
+                max-width: 18px;
+                max-height: 18px;
+                color: var(--error-color);
+            }
+
+            .cancel {
+                right: 2px;
+                position: absolute;
+            }
+
+            .cancel:hover {
+                cursor: pointer;
+            }
+
+                        .cloning {
+            }
+
+            .status {
+                width: 6px;
+                height: 76px;
+                left: 0px;
+            }
+
+            .building {
+                background-color: #2196F3;
+            }
+
+            .done {
+                background-color: #4CAF50;
+            }
+
+            .cancelled {
+                background-color: #FF9800;
+            }
+
+            .failed {
+                background-color: #FF5722;
+            }
+
+            .cloning {
+                background-color: #2196F3;
+            }
+
+            .queued {
+                background-color: #FFCA28;
+            }
+
+            .progress-cloning {
+                --paper-progress-active-color: #2196F3;
+            }
+
+            .progress-building {
+                --paper-progress-active-color: #2196F3;
+            }
+
+            .progress {
+                position: absolute;
+                bottom: 0px;
+                right: 8px;
+                width: 56px;
+                --paper-progress-container-color: var(--primary-background-color);
+            }
+        </style>
+        <paper-card id="card" class="item" elevation="1">
+            <div class$="status {{_status(build)}}">
+            </div>
+            <div class="commit">
+                [[build.commit]]
+            </div>
+            <div class="message">
+                [[build.message]]
+            </div>
+            <div class="branch">
+                [[build.config.branch]]@{{_trimRepo(build.config.repository)}}
+            </div>
+
+
+            <div class="elapsed">
+                <template is="dom-if" if="{{_showTime(build)}}">
+                    [[elapsed]]
+                </template>
+                <template is="dom-if" if="{{!_showTime(build)}}">
+                    {{_toLower(build.progress)}}
+                </template>
+            </div>
+
+            <paper-tooltip for="card" position="top" animation-delay="0">
+                {{_toLower(build.progress)}}
+            </paper-tooltip>
+
+            <template is="dom-if" if="{{_cancellable(build)}}">
+                <div id="cancel" class="cancel">
+                    <iron-icon class="icon" icon="icons:close"></iron-icon>
+                    <paper-tooltip for="cancel" position="bottom" animation-delay="0">
+                        cancels the build
+                    </paper-tooltip>
+                </div>
+            </template>
+
+            <template is="dom-if" if="{{_inProgress(build)}}">
+                <paper-progress indeterminate class$="progress slow {{_progress(build)}}"></paper-progress>
+            </template>
+
+        </paper-card>
+    </template>
+</dom-module>
+<script>
+    class BuildCard extends Polymer.Element {
+
+        static get is() {
+            return 'build-card';
+        }
+
+        constructor() {
+            super();
+        }
+
+        ready() {
+            super.ready();
+
+            if (this.build.end) {
+                this.elapsed = this._time(this.build.start, this.build.end);
+            } else {
+                setInterval(() => {
+                    this.elapsed = this._time(this.build.start, new Date().getTime() / 1000);
+                }, 1000);
+            }
+        }
+
+        _cancellable(build) {
+            let progress = build.progress;
+            return (progress == 'CLONING' || progress == 'BUILDING' || progress == 'QUEUED');
+        }
+
+        _inProgress(build) {
+            return (build.progress == 'CLONING' || build.progress == 'BUILDING');
+        }
+
+        _isCloning(build) {
+            return (build.progress == 'CLONING');
+        }
+
+        _showTime(build) {
+            return !(build.progress == 'QUEUED') && !(build.progress == 'CLONING');
+        }
+
+        _progress(build) {
+            return 'progress-' + build.progress.toLowerCase();
+        }
+
+        _toLower(string) {
+            return string.toLowerCase();
+        }
+
+        _trimRepo(string) {
+            let parts = string.split('/');
+            return parts[parts.length - 1];
+        }
+
+        _time(epoch, now) {
+            let seconds = (now - epoch);
+
+            let minutes = Math.trunc(seconds / 60);
+            seconds = Math.trunc(seconds % 60);
+
+            return this._leftPad(minutes) + ':' + this._leftPad(seconds);
+        }
+
+        _leftPad(int) {
+            if (int < 10) {
+                return '0' + int;
+            } else {
+                return int;
+            }
+        }
+
+        _status(build) {
+            return build.progress.toLowerCase();
+        }
+    }
+    window.customElements.define(BuildCard.is, BuildCard);
+
+
+
+
+
+
+
+
+</script>

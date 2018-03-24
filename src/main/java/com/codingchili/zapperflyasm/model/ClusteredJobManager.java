@@ -116,6 +116,13 @@ public class ClusteredJobManager implements JobManager {
     }
 
     @Override
+    public Future<Collection<BuildConfiguration>> getAllConfigs() {
+        Future<Collection<BuildConfiguration>> future = Future.future();
+        configs.values(future);
+        return future;
+    }
+
+    @Override
     public Future<Collection<BuildJob>> getAll() {
         Future<Collection<BuildJob>> future = Future.future();
         jobs.values(future);

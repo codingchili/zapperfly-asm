@@ -1,0 +1,145 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="build-executors">
+    <template>
+        <style include="shared-styles"></style>
+        <style is="custom-style">
+            :host {
+                display: block;
+                width: 30%;
+                margin-right: 6px;
+            }
+
+            .title {
+                text-align: center;
+                display: block;
+            }
+
+            h4 {
+                opacity: 0.85;
+            }
+
+            .executor {
+                margin-bottom: 6px;
+                display: flex;
+                margin-left: 6px;
+                margin-right: 6px;
+            }
+
+            .status {
+                position: absolute;
+                right: 6px;
+                top: 10px;
+            }
+
+            .online {
+                color: var(--primary-color);
+            }
+
+            .offline {
+                color: var(--error-color);
+            }
+
+            .instance {
+                margin-top: 6px;
+                margin-left: 6px;
+                font-size: 0.85em;
+                opacity: 0.85;
+            }
+
+            .capacity {
+                margin-top: 6px;
+                margin-left: 16px;
+                font-size: 0.65em;
+                opacity: 0.85;
+                padding-bottom: 8px;
+            }
+
+            .items {
+                width: 100%;
+                display: block;
+            }
+
+            #spinner {
+                display: block;
+                margin: auto;
+                margin-top: 12px;
+            }
+
+        </style>
+
+        <div class="container">
+            <span class="title">
+                <h4>Available executors
+
+                    <template is="dom-if" if="[[!started]]">
+                        <paper-spinner id="spinner" active></paper-spinner>
+                    </template>
+                </h4>
+            </span>
+        </div>
+
+        <div class="items">
+            <template is="dom-repeat" items="{{executors}}" as="executor">
+                <paper-card class="executor" elevation="1">
+                    <div class="instance">
+                        [[executor.instance]]
+                    </div>
+                    <template is="dom-if" if="[[!executor.online]]">
+                        <div class="status offline">
+                            offline
+                        </div>
+                    </template>
+                    <template is="dom-if" if="[[executor.online]]">
+                        <div class="status online">
+                            online
+                        </div>
+                    </template>
+                    <div class="capacity">
+                        Executing: [[executor.builds]] <br>
+                        Capacity: [[executor.capacity]]
+                    </div>
+                </paper-card>
+            </template>
+        </div>
+
+        <iron-ajax auto id="executorsLoader" url="https://localhost:8080/?target=builds&route=executors"
+                   handle-as="json"
+                   on-response="_onExecutors" debounce-duration="300">
+        </iron-ajax>
+
+    </template>
+</dom-module>
+<script>
+    class BuildExecutors extends Polymer.Element {
+
+        static get is() {
+            return 'build-executors';
+        }
+
+        constructor() {
+            super();
+            this.started = false;
+
+            setInterval(() => {
+                this.$.executorsLoader.generateRequest();
+            }, 3000);
+        }
+
+        _onExecutors(event, request) {
+            this.executors = request.response.collection;
+
+            if (this.executors.length > 0) {
+                this.started = true;
+            } else {
+                this.started = false;
+            }
+        }
+    }
+    window.customElements.define(BuildExecutors.is, BuildExecutors);
+
+
+</script>

@@ -1,0 +1,115 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="build-card.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="build-stats">
+    <template>
+        <style include="shared-styles"></style>
+        <style is="custom-style">
+            :host {
+                display: block;
+                width: 100%;
+                height: 128px;
+                text-align: center;
+            }
+
+            paper-card {
+                width: 100%;
+                height: 100%;
+            }
+
+            .joke {
+                font-size: 0.8em;
+                opacity: 0.8;
+            }
+
+            .date {
+                position: absolute;
+                font-size: 0.8em;
+                opacity: 0.8;
+                top: 6px;
+                right: 6px;
+            }
+
+            .config {
+                position: absolute;
+                top: 6px;
+                left: 6px;
+                color: var(--primary-color);
+                cursor: pointer;
+            }
+
+            h4 {
+                opacity: 0.85;
+            }
+        </style>
+
+        <paper-card elevation="1">
+            <h4>Zapperfly build server 1.0.0</h4>
+
+            <span class="joke">[[joke]]</span>
+            <span class="date">[[time]]</span>
+
+            <div class="config">
+                <iron-icon on-click="_configure" class="icon" icon="icons:settings"></iron-icon>
+                <iron-icon on-click="_about" class="icon" icon="icons:info-outline"></iron-icon>
+            </div>
+
+        </paper-card>
+
+        <paper-dialog id="about" with-backdrop>
+            <h2>About</h2>
+            <paper-dialog-scrollable>
+                <div class="log">
+                    some description and github link
+                </div>
+            </paper-dialog-scrollable>
+            <div class="buttons">
+                <paper-button dialog-dismiss on-click="_close">Close</paper-button>
+            </div>
+        </paper-dialog>
+
+        <iron-ajax auto id="jokeLoader" url="https://api.icndb.com/jokes/random?limitTo=[nerdy]" handle-as="json"
+                   on-response="_onJokes" debounce-duration="300">
+        </iron-ajax>
+
+    </template>
+</dom-module>
+<script>
+    class BuildStats extends Polymer.Element {
+
+        static get is() {
+            return 'build-stats';
+        }
+
+        constructor() {
+            super();
+
+            this._updateTime();
+            setInterval(() => {
+                this._updateTime();
+            }, 1000);
+
+            setInterval(() => {
+                this.$.jokeLoader.generateRequest();
+            }, 10000);
+        }
+
+        _about() {
+            this.$.about.open();
+        }
+
+        _updateTime() {
+            this.time = new Date().toLocaleString();
+        }
+
+        _onJokes(event, request) {
+            this.joke = request.response.value.joke;
+        }
+    }
+    window.customElements.define(BuildStats.is, BuildStats);
+
+</script>
