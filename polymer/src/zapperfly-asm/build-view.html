@@ -16,7 +16,6 @@
                 height: 100%;
                 text-align: center;
                 min-height: 326px;
-                background-color: var(--primary-background-color);
             }
 
             paper-card {
@@ -24,18 +23,10 @@
                 height: 100%;
             }
 
-            h4 {
-                opacity: 0.85;
-            }
-
             .log {
                 text-align: left;
                 margin-left: 8px;
                 margin-right: 8px;
-            }
-
-            .buttons:hover {
-                cursor: pointer;
             }
 
           #spinner {
@@ -46,14 +37,41 @@
 
           .history {
             position: absolute;
-            color: var(--primary-color);
-            cursor: pointer;
             margin-left: 6px;
             margin-top: -2px;
           }
 
           #spinner {
             margin-top: 12px;
+          }
+
+          #logDialog {
+            position: absolute;
+            top: 0;
+            left: 10%;
+            right: 10%;
+            margin: 24px;
+            padding: 0;
+            min-width: 80%;
+          }
+
+          @media (max-width: 528px) {
+            #logDialog {
+                margin: 0;
+                left: 0;
+            }
+          }
+
+          .line {
+            color: var(--primary-color);
+          }
+
+          .date {
+            color: var(--secondary-color);
+          }
+
+          .text {
+            word-break: break-all;
           }
 
         </style>
@@ -76,15 +94,17 @@
             </template>
         </template>
 
-        <paper-dialog id="logDialog" with-backdrop>
+        <paper-dialog id="logDialog" with-backdrop modal>
             <h2>[[build.message]]</h2>
-            <paper-dialog-scrollable>
-                <div class="log">
-                    <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
-                    <template is="dom-repeat" items="[[build.log]]" as="log">
-                        {{_line()}}: [[log.line]] + [[log.time]]<br>
-                    </template>
-                </div>
+            <paper-dialog-scrollable id="terminal" class="log">
+                <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
+
+                <template is="dom-repeat" items="{{log}}" as="event">
+                    <span class="line">[{{_line()}}]</span>
+                    <span class="date">[[_toDate(event.time)]]</span>
+                    <span class="text">[[event.line]]</span>
+                    <hr>
+                </template>
             </paper-dialog-scrollable>
             <div class="buttons">
                 <paper-button dialog-dismiss on-click="_close">Close</paper-button>
@@ -113,9 +133,11 @@
         constructor() {
             super();
             this.started = false;
+            this.build = null;
+            this.log = [];
 
             setInterval(() => {
-                if (this.build != undefined) {
+                if (this.build != null) {
                     this._reload();
                 }
             }, 3000);
@@ -135,16 +157,22 @@
             this.line = 0;
             this.offset = 0;
             this.build = e.model.build;
-            this.build.log = [];
+            this.log = [];
             this.$.logDialog.open();
             this._reload();
         }
 
+        _toDate(epochMS) {
+            return new Date(epochMS).toLocaleString();
+        }
+
         _onBuildLog(event, request) {
-            this.build.log.push(...request.response.log);
-            this.offset += request.response.log.length;
-            this.notifyPath('build.log');
+            this.log.push(...request.response.collection);
+            this.notifyPath('log');
+            this.notifySplices('log');
+            this.offset += request.response.collection.length;
             this.$.logDialog.notifyResize();
+            this.$.terminal.scrollTop += 300;
             this.loading = false;
         }
 
@@ -165,14 +193,5 @@
         }
     }
     window.customElements.define(BuildView.is, BuildView);
-
-
-
-
-
-
-
-
-
 
 </script>

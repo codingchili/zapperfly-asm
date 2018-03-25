@@ -1,10 +1,14 @@
 package com.codingchili.zapperflyasm.model;
 
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.storage.Storable;
+
+import static com.codingchili.zapperflyasm.model.BuildRequest.ID_TIME;
 
 /**
  * @author Robin Duda
@@ -12,9 +16,11 @@ import com.codingchili.core.storage.Storable;
  * Represents a single build that is executing or is to be executed.
  */
 public class BuildJob implements Storable {
-    private Collection<LogEvent> log = new ArrayList<>();
+    public static final String START = "start";
+    private transient Consumer<BuildJob> saver;
+    private transient BiConsumer<BuildJob, String> logger;
     private BuildConfiguration config;
-    private Long start = ZonedDateTime.now().toEpochSecond();
+    private Long start = ZonedDateTime.now().toInstant().toEpochMilli();
     private Long end;
     private String id = UUID.randomUUID().toString();
     private String instance = Environment.hostname().orElseGet(() -> UUID.randomUUID().toString());
@@ -23,10 +29,22 @@ public class BuildJob implements Storable {
     private Status progress = Status.QUEUED;
     private String directory;
 
-    public BuildJob() {}
+    public BuildJob() {
+    }
 
-    public BuildJob(BuildConfiguration config) {
+    public BuildJob(BuildConfiguration config, Consumer<BuildJob> saver, BiConsumer<BuildJob, String> logger) {
         this.config = config;
+        this.saver = saver;
+        this.logger = logger;
+    }
+
+    public void log(String line) {
+        logger.accept(this, line);
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        throw new RuntimeException("not really supported.");
     }
 
     /**
@@ -38,27 +56,6 @@ public class BuildJob implements Storable {
 
     public void setCommit(String commit) {
         this.commit = commit;
-    }
-
-    /**
-     * @return a list of lines that is the output of the build execution.
-     */
-    public Collection<LogEvent> getLog() {
-        return log;
-    }
-
-    public void setLog(Collection<LogEvent> log) {
-        this.log = log;
-    }
-
-    /**
-     * @param line a line to log.
-     */
-    public void log(String line) {
-        LogEvent event = new LogEvent();
-        event.setTime(ZonedDateTime.now().toEpochSecond());
-        event.setLine(line);
-        log.add(event);
     }
 
     public void setStart(Long start) {
@@ -106,8 +103,10 @@ public class BuildJob implements Storable {
         this.progress = progress;
 
         if (progress.equals(Status.DONE) || progress.equals(Status.FAILED) || progress.equals(Status.CANCELLED)) {
-            this.end = ZonedDateTime.now().toEpochSecond();
+            this.end = ZonedDateTime.now().toInstant().toEpochMilli();
         }
+
+        saver.accept(this);
     }
 
     /**
@@ -163,25 +162,31 @@ public class BuildJob implements Storable {
         return (obj instanceof BuildJob) && ((BuildJob) obj).id.equals(id);
     }
 
-    /**
-     * @return creates a copy of this Build without the full log.
-     */
-    public BuildJob copyWithoutLog() {
-        BuildJob clone = new BuildJob(config);
-        clone.id = id;
-        clone.message = message;
-        clone.commit = commit;
-        clone.progress = progress;
-        clone.config = config;
-        clone.instance = instance;
-        clone.end = end;
-        clone.start = start;
-        clone.directory = directory;
-        return clone;
-    }
-
     @Override
     public String toString() {
         return String.format("[%s] on branch %s in repo %s.", id, config.getBranch(), config.getRepository());
+    }
+
+    @Override
+    public int compareToAttribute(Storable other, String attribute) {
+        if (attribute.equals(START)) {
+            return start.compareTo(((BuildJob) other).start);
+        } else {
+            return 0;
+        }
+    }
+
+    /**
+     * @param logger the logger to use for this instance.
+     */
+    public void setLogger(BiConsumer<BuildJob, String> logger) {
+        this.logger = logger;
+    }
+
+    /**
+     * @param saver the saver to use for this instance.
+     */
+    public void setSaver(Consumer<BuildJob> saver) {
+        this.saver = saver;
     }
 }

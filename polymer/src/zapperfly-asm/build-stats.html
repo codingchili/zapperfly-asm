@@ -41,10 +41,6 @@
                 color: var(--primary-color);
                 cursor: pointer;
             }
-
-            h4 {
-                opacity: 0.85;
-            }
         </style>
 
         <paper-card elevation="1">
@@ -64,11 +60,15 @@
             <h2>About</h2>
             <paper-dialog-scrollable>
                 <div class="log">
-                    some description and github link
+
+                    <p>Zapperfly-asm is a clustered build server with minimal setup!</p>
+
+                    <p>Zapperfly is developed by Robin Duda, find the source code and more of my projects on
+                    <a target="_blank" href="https://github.com/codingchili">GITHUB</a>.</p>
                 </div>
             </paper-dialog-scrollable>
             <div class="buttons">
-                <paper-button dialog-dismiss on-click="_close">Close</paper-button>
+                <paper-button raised dialog-dismiss>Close</paper-button>
             </div>
         </paper-dialog>
 

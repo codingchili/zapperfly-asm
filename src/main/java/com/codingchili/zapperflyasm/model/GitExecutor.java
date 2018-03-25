@@ -24,16 +24,16 @@ import com.codingchili.core.logging.Logger;
 public class GitExecutor implements VersionControlSystem {
     private WorkerExecutor executor;
     private Logger logger;
-    private Vertx vertx;
+    private CoreContext core;
 
 
     /**
      * @param core the core context to run the executor on.
      */
     public GitExecutor(CoreContext core) {
-        vertx = core.vertx();
+        this.core = core;
         logger = core.logger(getClass());
-        executor = vertx.createSharedWorkerExecutor("git");
+        executor = core.vertx().createSharedWorkerExecutor("git");
     }
 
     @Override
@@ -47,19 +47,13 @@ public class GitExecutor implements VersionControlSystem {
             job.setDirectory(getDirectory(job));
 
             try {
-                BuildConfiguration config = job.getConfig();
+                String command = getCommand(job);
+                job.log(command);
 
-                Process process = new ProcessBuilder(
-                        String.format("git clone -b %s %s %s",
-                                config.getBranch(),
-                                config.getRepository(),
-                                job.getDirectory())
-                                .split(" "))
+                Process process = new ProcessBuilder(command.split(" "))
                         .start();
 
-                logger.log(new BufferedReader(new InputStreamReader(process.getErrorStream())).lines()
-                        .collect(Collectors.joining("\n")));
-
+                new ProcessUtil(core).readProcessOutput(process, job);
                 process.waitFor(config().getTimeoutSeconds(), TimeUnit.SECONDS);
 
                 if (process.exitValue() == 0) {
@@ -78,6 +72,14 @@ public class GitExecutor implements VersionControlSystem {
         return future;
     }
 
+    private String getCommand(BuildJob job) {
+        BuildConfiguration config = job.getConfig();
+        return String.format("git clone -b %s %s %s",
+                config.getBranch(),
+                config.getRepository(),
+                job.getDirectory());
+    }
+
     private ZapperConfig config() {
         return ZapperConfig.get();
     }
@@ -90,7 +92,7 @@ public class GitExecutor implements VersionControlSystem {
 
         buildJob.getConfig().getOutputDirs().forEach(dir -> {
             Future<List<String>> ls = Future.future();
-            vertx.fileSystem().readDir(dir, done -> {
+            core.vertx().fileSystem().readDir(dir, done -> {
                 if (done.succeeded()) {
                     files.addAll(done.result());
                 } else {
@@ -113,7 +115,7 @@ public class GitExecutor implements VersionControlSystem {
     @Override
     public Future<Void> delete(BuildJob job) {
         Future<Void> future = Future.future();
-        vertx.fileSystem().deleteRecursive(job.getDirectory(), true, future);
+        core.vertx().fileSystem().deleteRecursive(job.getDirectory(), true, future);
         return future;
     }
 

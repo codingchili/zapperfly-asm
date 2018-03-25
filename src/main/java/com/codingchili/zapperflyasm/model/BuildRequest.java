@@ -17,6 +17,7 @@ public class BuildRequest extends RequestWrapper {
     public static final String ID_LOG = "log";
     public static final String ID_OFFSET = "offset";
     public static final String ID_LIST= "list";
+    public static final String ID_TIME = "time";
 
     /**
      * @param request the original request to decorate.

@@ -21,6 +21,8 @@ public interface JobManager {
      */
     Future<BuildJob> submit(BuildConfiguration config);
 
+    Future<Collection<InstanceInfo>> instances();
+
     /**
      * Cancels a build that is in progress.
      *
@@ -87,4 +89,6 @@ public interface JobManager {
      * @return all builds that has ever been scheduled.
      */
     Future<Collection<BuildJob>> getAll();
+
+    Future<Collection<LogEvent>> getLog(String buildId, int logOffset);
 }

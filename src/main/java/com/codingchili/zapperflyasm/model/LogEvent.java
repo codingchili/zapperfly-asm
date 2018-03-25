@@ -1,15 +1,33 @@
 package com.codingchili.zapperflyasm.model;
 
-import java.io.Serializable;
+import java.time.ZonedDateTime;
+import java.util.UUID;
+
+import com.codingchili.core.storage.Storable;
+
+import static com.codingchili.zapperflyasm.model.BuildRequest.ID_TIME;
 
 /**
  * @author Robin Duda
  *
  * A log record for build outputs.
  */
-public class LogEvent implements Serializable {
+public class LogEvent implements Storable {
+    private String id = UUID.randomUUID().toString();
+    private Long time = ZonedDateTime.now().toInstant().toEpochMilli();
+    private String build;
     private String line;
-    private Long time;
+
+
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    public LogEvent setId(String id) {
+        this.id = id;
+        return this;
+    }
 
     /**
      * @return the logged message.
@@ -18,8 +36,9 @@ public class LogEvent implements Serializable {
         return line;
     }
 
-    public void setLine(String line) {
+    public LogEvent setLine(String line) {
         this.line = line;
+        return this;
     }
 
     /**
@@ -29,7 +48,29 @@ public class LogEvent implements Serializable {
         return time;
     }
 
-    public void setTime(Long time) {
+    public LogEvent setTime(Long time) {
         this.time = time;
+        return this;
+    }
+
+    /**
+     * @return primary index key for the log event.
+     */
+    public String getBuild() {
+        return build;
+    }
+
+    public LogEvent setBuild(String build) {
+        this.build = build;
+        return this;
+    }
+
+    @Override
+    public int compareToAttribute(Storable other, String attribute) {
+        if (attribute.equals(ID_TIME)) {
+            return time.compareTo(((LogEvent) other).time);
+        } else {
+            return 0;
+        }
     }
 }

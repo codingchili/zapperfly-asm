@@ -1,11 +1,11 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
-<link rel="import" href="shared-styles.html">
 <link rel="import" href="build-queue.html">
 <link rel="import" href="build-stats.html">
 <link rel="import" href="build-view.html">
 <link rel="import" href="build-executors.html">
 <link rel="import" href="loading-spinner.html">
+<link rel="import" href="shared-styles.html">
 
 <dom-module id="app-view">
     <template>
@@ -18,8 +18,17 @@
                 left: 0px;
                 right: 0px;
                 bottom: 0px;
-                background-color: var(--primary-background-color);
+            }
+
+            #container {
+                height: 100%;
+                width: 100%;
                 color: var(--primary-text-color);
+                background-color: var(--primary-background-color);
+            }
+
+            .fill {
+                background-color: var(--primary-background-color);
             }
 
             .flex {
@@ -48,32 +57,30 @@
 
         </style>
 
-        <!-- with configuration wheel -->
-        <app-toolbar class="fixed">
-            <paper-icon-button icon="menu" on-click="drawer"></paper-icon-button>
-            <div class="title" on-click="startpage">[[titletext]]</div>
-        </app-toolbar>
-
+        <div id="container">
             <!-- display on top, builds failures etc. -->
             <build-stats></build-stats>
 
-            <div class="flex">
-                <!-- left sidebar, show queued builds -->
-                <build-queue id="queue"></build-queue>
+            <div class="fill">
+                <div class="flex">
+                    <!-- left sidebar, show queued builds -->
+                    <build-queue id="queue"></build-queue>
 
-                <!-- center of screen -->
-                <!-- click on an item to show the build log, back button for list. -->
-                <build-view id="builds"></build-view>
+                    <!-- center of screen -->
+                    <!-- click on an item to show the build log, back button for list. -->
+                    <build-view id="builds"></build-view>
 
-                <!-- right sidebar -->
-                <build-executors id="executors"></build-executors>
+                    <!-- right sidebar -->
+                    <build-executors id="executors"></build-executors>
+                </div>
+
+                <iron-ajax auto url="https://localhost:8080/?target=builds&route=list" handle-as="json"
+                           on-response="_onBuildsDownloaded" id="statusLoader" debounce-duration="300">
+                </iron-ajax>
+
+                <loading-spinner></loading-spinner>
             </div>
-
-        <iron-ajax auto url="https://localhost:8080/?target=builds&route=list" handle-as="json"
-                   on-response="onBuildsDownloaded" debounce-duration="300">
-        </iron-ajax>
-
-        <loading-spinner></loading-spinner>
+        </div>
 
     </template>
 
@@ -87,15 +94,23 @@
 
         constructor() {
             super();
+
+            setInterval(() => {
+                this._load();
+            }, 2500);
         }
 
-        onBuildsDownloaded(event, request) {
+        _onBuildsDownloaded(event, request) {
             this.builds = request.response.list;
             this.$.queue.setBuilds(this.builds);
+            this.$.queue.setLoader(() => this._load());
             this.$.builds.setBuilds(this.builds);
+        }
+
+        _load() {
+            this.$.statusLoader.generateRequest();
         }
     }
     window.customElements.define(AppView.is, AppView);
-
 
 </script>

@@ -23,6 +23,7 @@ import com.codingchili.core.storage.JsonMap;
 import com.codingchili.core.testing.RequestMock;
 import com.codingchili.core.testing.ResponseListener;
 
+import static com.codingchili.core.configuration.CoreStrings.ID_COLLECTION;
 import static com.codingchili.core.protocol.ResponseStatus.*;
 import static com.codingchili.zapperflyasm.model.BuildRequest.*;
 
@@ -58,7 +59,7 @@ public class BuildHandlerTest {
                 this.configs = configs.result();
                 this.jobs = jobs.result();
 
-                ClusteredJobManager manager = new ClusteredJobManager(core, this.jobs, this.configs);
+                ClusteredJobManager manager = new ClusteredJobManager(core, this.jobs, logs, this.configs);
                 manager.setVCSProvider(new VCSMock(core));
                 manager.setBuildExecutor(new BuildExecutorMock(true));
 
@@ -75,7 +76,7 @@ public class BuildHandlerTest {
     }
 
     private BuildJob getTestBuild() {
-        BuildJob job = new BuildJob();
+        BuildJob job = new BuildJob(config, jobs, logs);
         job.setId(TEST_ID);
         job.setCommit("commit");
         job.setDirectory(TEST_DIR);
@@ -83,7 +84,7 @@ public class BuildHandlerTest {
         job.setStart(ZonedDateTime.now().toEpochSecond());
         Collection<String> lines = new ArrayList<>();
         lines.add("log line 1");
-        job.setLog(lines);
+        lines.forEach(job::log);
         return job;
     }
 
@@ -174,11 +175,17 @@ public class BuildHandlerTest {
     public void listBuildArtifacts(TestContext test) {
         Async async = test.async();
 
-        handler.artifacts(request((response, status) -> {
-            test.assertEquals(ACCEPTED, status);
-            async.complete();
-        }, new JsonObject()
-                .put(ID_BUILD, TEST_ID)));
+        BuildConfiguration config = new BuildConfiguration();
+        config.setRepository("repo");
+        config.setBranch("mybranch");
+
+        configs.put(config, (done) -> {
+            handler.artifacts(request((response, status) -> {
+                test.assertEquals(ACCEPTED, status);
+                async.complete();
+            }, new JsonObject()
+                    .put(ID_BUILD, TEST_ID)));
+        });
     }
 
     @Test
@@ -205,6 +212,17 @@ public class BuildHandlerTest {
             unconfigure.run();
         }, new JsonObject()
                 .put(ID_CONFIG, Serializer.json(config))));
+    }
+
+    @Test
+    public void listConfigurations(TestContext test) {
+        Async async = test.async();
+
+        handler.configurations(request((response, status) -> {
+            test.assertTrue(response.getJsonArray(ID_COLLECTION).size() > 0);
+            test.assertEquals(ACCEPTED, status);
+            async.complete();
+        }, new JsonObject()));
     }
 
     private BuildRequest request(ResponseListener response, JsonObject data) {

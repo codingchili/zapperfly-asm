@@ -6,21 +6,19 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
-import com.codingchili.core.storage.*;
+import com.codingchili.core.storage.AsyncStorage;
 
+import static com.codingchili.core.configuration.CoreStrings.throwableToString;
 import static com.codingchili.core.protocol.RoleMap.PUBLIC;
 import static com.codingchili.zapperflyasm.model.BuildRequest.ID_LIST;
-import static com.codingchili.zapperflyasm.model.BuildRequest.ID_LOG;
 
 /**
  * @author Robin Duda
@@ -35,7 +33,6 @@ public class BuildHandler implements CoreHandler {
     private Protocol<Request> protocol = new Protocol<>(this);
     private ClusteredJobManager manager;
     private CoreContext core;
-    private AtomicInteger counter = new AtomicInteger(0);
 
     @Override
     public void init(CoreContext core) {
@@ -46,56 +43,31 @@ public class BuildHandler implements CoreHandler {
     public void start(Future<Void> start) {
         CompositeFuture.join(
                 ZapperConfig.getStorage(core, BuildJob.class),
-                ZapperConfig.getStorage(core, BuildConfiguration.class)
+                ZapperConfig.getStorage(core, BuildConfiguration.class),
+                ZapperConfig.getStorage(core, LogEvent.class)
         ).setHandler(done -> {
             if (done.succeeded()) {
                 AsyncStorage<BuildJob> jobs = done.result().resultAt(0);
                 AsyncStorage<BuildConfiguration> configs = done.result().resultAt(1);
+                AsyncStorage<LogEvent> logs = done.result().resultAt(2);
 
                 BuildConfiguration config = new BuildConfiguration();
-                config.setRepository("github.com/codingchili/zapper-test.git");
+                config.setRepository("https://github.com/codingchili/zapperfly-asm.git");
                 config.setBranch("master");
                 config.setOutputDirs(Arrays.asList("out", "build", "target"));
-                config.setCmdLine("gradlew build");
+                config.setCmdLine("cmd.exe /C gradlew.bat build --info --debug");
 
                 // add a test job :P
 
-                for (int i = 0; i < 10; i++) {
-                    BuildJob job = new BuildJob();
-                    job.setInstance("zapper1");
-                    job.setCommit("ae910dba");
-                    job.setMessage("GEM-479: added quadruple boosters.");
-                    job.setConfig(config);
-
-                    job.log("line 1");
-                    job.log("line 2");
-                    job.log("line 3");
-
-                    List<Status> statuses = Arrays.asList(Status.values());
-                    Collections.shuffle(statuses);
-                    job.setProgress(statuses.get(0));
-
-                    if (!job.getProgress().equals(Status.BUILDING) && !job.getProgress().equals(Status.CLONING)) {
-                        job.setEnd((new Date().getTime() / 1000) + new Random().nextInt(900));
+                configs.put(config, (put) -> {
+                    if (put.succeeded()) {
+                        System.out.println("config put.");
+                    } else {
+                        System.err.println(throwableToString(put.cause()));
                     }
+                });
 
-                    jobs.put(job, (put) -> {
-                        if (put.succeeded()) {
-                            System.out.println("created job " + job.getId());
-                        } else {
-                            System.err.println(CoreStrings.throwableToString(put.cause()));
-                        }
-                    });
-
-                   core.periodic(() -> 500, "logger", (d) -> {
-                        jobs.put(job, (put) -> {
-                            job.log("hello " + counter.incrementAndGet());
-                        });
-                    });
-
-                }
-
-                this.manager = new ClusteredJobManager(core, jobs, configs);
+                this.manager = new ClusteredJobManager(core, jobs, logs, configs);
                 start.complete();
             } else {
                 start.fail(done.cause());
@@ -110,7 +82,7 @@ public class BuildHandler implements CoreHandler {
             if (config == null) {
                 request.error(new NotConfiguredException(request));
             } else {
-                request.write(manager.submit(config));
+                manager.submit(config).setHandler(request::result);
             }
         });
     }
@@ -130,18 +102,13 @@ public class BuildHandler implements CoreHandler {
     @Api
     @Description("Retrieves the build log for the running build with the given line offset.")
     public void log(BuildRequest request) {
-        getJob(request, job -> {
-            request.write(new JsonObject().put(ID_LOG, job.getLog().stream()
-                    .skip(request.getLogOffset())
-                    .map(Serializer::json)
-                    .collect(Collectors.toList())));
-        });
+        manager.getLog(request.getBuildId(), request.getLogOffset()).setHandler(request::result);
     }
 
     @Api
     @Description("Returns the build status for the given build ID without the build log.")
     public void status(BuildRequest request) {
-        getJob(request, job -> request.write(job.copyWithoutLog()));
+        getJob(request, request::write);
     }
 
     @Api
@@ -151,7 +118,6 @@ public class BuildHandler implements CoreHandler {
             if (done.succeeded()) {
                 request.write(new JsonObject().put(ID_LIST,
                         done.result().stream()
-                                .map(BuildJob::copyWithoutLog)
                                 .map(Serializer::json)
                                 .collect(Collectors.toList()))
                 );
@@ -186,35 +152,15 @@ public class BuildHandler implements CoreHandler {
     }
 
     @Api
-    @Description("Lists all available executors.")
-    public void executors(BuildRequest request) {
-        List<ExecutorInfo> executors = new ArrayList<>();
-
-        executors.add(new ExecutorInfo()
-            .setBuilds(2)
-            .setCapacity(3)
-            .setOnline(true)
-            .setInstance("zapper.1"));
-
-        executors.add(new ExecutorInfo()
-                .setBuilds(0)
-                .setCapacity(5)
-                .setOnline(true)
-                .setInstance("zapper.2"));
-
-        executors.add(new ExecutorInfo()
-                .setBuilds(0)
-                .setCapacity(5)
-                .setOnline(false)
-                .setInstance("zapper.3"));
-
-        request.write(executors);
+    @Description("Lists available configurations.")
+    public void configurations(BuildRequest request) {
+        manager.getAllConfigs().setHandler(request::result);
     }
 
     @Api
-    @Description("Lists available configurations.")
-    public void configurations(BuildRequest request) {
-        request.write(manager.getAllConfigs());
+    @Description("Lists all available executors.")
+    public void executors(BuildRequest request) {
+        manager.instances().setHandler(request::result);
     }
 
     private void getJob(BuildRequest request, Consumer<BuildJob> consumer) {
@@ -222,7 +168,7 @@ public class BuildHandler implements CoreHandler {
             if (done.succeeded()) {
                 consumer.accept(done.result());
             } else {
-                throw new CoreRuntimeException(CoreStrings.throwableToString(done.cause()));
+                throw new CoreRuntimeException(throwableToString(done.cause()));
             }
         });
     }
@@ -232,7 +178,7 @@ public class BuildHandler implements CoreHandler {
             if (done.succeeded()) {
                 consumer.accept(done.result());
             } else {
-                throw new CoreRuntimeException(CoreStrings.throwableToString(done.cause()));
+                throw new CoreRuntimeException(throwableToString(done.cause()));
             }
         });
     }

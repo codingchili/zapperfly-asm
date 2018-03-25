@@ -6,6 +6,7 @@ import io.vertx.core.WorkerExecutor;
 
 import java.io.*;
 import java.time.ZonedDateTime;
+import java.util.function.Consumer;
 
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
@@ -42,22 +43,20 @@ public class ProcessBuilderExecutor implements BuildExecutor {
             job.setProgress(Status.BUILDING);
             logEvent("buildBegin", job);
             try {
-                Process process = new ProcessBuilder(job.getConfig().getCmdLine().split(" "))
+                String command = job.getConfig().getCmdLine();
+                job.log(command);
+
+                Process process = new ProcessBuilder(command.split(" "))
                         .directory(new File(job.getDirectory()))
                         .start();
 
                 monitorProcessTimeout(process, blocking, job);
+                new ProcessUtil(core).readProcessOutput(process, job);
 
-                String line;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                while ((line = reader.readLine()) != null) {
-                    job.log(line);
-                }
             } catch (Throwable e) {
                 logError(job, e);
                 blocking.fail(new CoreRuntimeException(e.getMessage()));
             }
-            job.setProgress(Status.DONE);
         }, false, future);
 
         return future;
@@ -73,9 +72,11 @@ public class ProcessBuilderExecutor implements BuildExecutor {
 
                 if (exitCode == 0) {
                     logEvent("buildComplete", job);
+                    job.setProgress(Status.DONE);
                     blocking.complete();
                 } else {
                     Throwable error = new BuildExecutorException(job, process.exitValue());
+                    job.setProgress(Status.FAILED);
                     logError(job, error);
                     blocking.fail(error);
                 }

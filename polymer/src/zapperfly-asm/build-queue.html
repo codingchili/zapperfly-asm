@@ -1,5 +1,10 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-dialog-behavior/paper-dialog-behavior.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/av-icons.html">
 <link rel="import" href="shared-styles.html">
@@ -11,7 +16,7 @@
             :host {
                 display: block;
                 width: 30%;
-                background-color: var(--primary-background-color);
+                text-align: center;
             }
 
             .item {
@@ -26,14 +31,11 @@
                 display: block;
            }
 
-           h4 {
-                opacity: 0.85;
-            }
-
             .build {
                 color: var(--primary-color);
                 cursor: pointer;
-                margin-left: 6px;
+                margin-left: 10px;
+                position: absolute;
             }
 
             #spinner {
@@ -42,22 +44,57 @@
                 margin-top: 12px;
             }
 
+            .configuration {
+                font-size: 1.0em;
+                opacity: 0.85;
+                display: block;
+            }
+
+            .branch {
+                text-align: left;
+                float: left;
+                margin-top: 14px;
+            }
+
+            .repository{
+                text-align: right;
+                float: right;
+                margin-top: 14px;
+            }
 
         </style>
 
         <span class="title">
             <h4>
                 Build queue
-
                 <template is="dom-if" if="[[!started]]">
                     <paper-spinner id="spinner" active></paper-spinner>
                 </template>
 
                 <template is="dom-if" if="[[started]]">
-                    <iron-icon on-click="clear" class="build icon" icon="av:play-circle-outline"></iron-icon>
+                    <iron-icon on-click="_start" class="build icon" icon="av:play-circle-outline"></iron-icon>
                 </template>
             </h4>
         </span>
+
+        <paper-dialog id="queue" with-backdrop>
+            <h2>Queue</h2>
+            <paper-dialog-scrollable>
+
+                Select a configuration to schedule a build.
+
+                <template is="dom-repeat" items="{{configurations}}" as="configuration">
+                    <paper-item class="configuration" on-click="_schedule">
+                        <span class="branch">[[configuration.branch]]</span>
+                        <span class="repository">[[configuration.repository]]</span>
+                    </paper-item>
+                </template>
+
+            </paper-dialog-scrollable>
+            <div class="buttons">
+                <paper-button raised dialog-dismiss>Close</paper-button>
+            </div>
+        </paper-dialog>
 
         <template is="dom-repeat" items="{{builds}}" as="build">
             <template is="dom-if" if="{{_show(build)}}">
@@ -67,6 +104,15 @@
             </template>
         </template>
 
+        <iron-ajax auto id="configurationLoader" url="https://localhost:8080/?target=builds&route=configurations"
+                   handle-as="json"
+                   on-response="_onConfiguration" debounce-duration="300">
+        </iron-ajax>
+
+        <iron-ajax id="buildScheduler"
+                   url="https://localhost:8080/?target=builds&route=build&branch=[[branch]]&repository=[[repository]]"
+                   handle-as="json" on-response="_onQueued" debounce-duration="300">
+        </iron-ajax>
     </template>
 </dom-module>
 <script>
@@ -82,18 +128,44 @@
         }
 
         setBuilds(builds) {
-            if (builds.length > 0) {
-               this.started = true;
-            } else {
-                this.started = false;
-            }
+            this.started = true;
             this.builds = builds;
+        }
+
+        setLoader(loader) {
+            this.loader = loader;
+        }
+
+        _start() {
+            this.$.queue.open();
         }
 
         _show(build) {
             return (build.progress == 'QUEUED')
         }
+
+        _schedule(e) {
+            let config = e.model.configuration;
+            this.branch = config.branch;
+            this.repository = config.repository;
+            this.$.buildScheduler.generateRequest();
+            this.$.queue.close();
+        }
+
+        _onQueued(event, request) {
+            if (this.loader) {
+                this.loader();
+            }
+        }
+
+        _onConfiguration(event, request) {
+            this.configurations = request.response.collection;
+            this.set('configurations', request.response.collection);
+            this.notifySplices('configurations');
+            this.notifyPath('configurations');
+        }
     }
     window.customElements.define(BuildQueue.is, BuildQueue);
+
 
 </script>

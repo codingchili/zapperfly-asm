@@ -34,6 +34,7 @@
     "paper-dialog-scrollable": "PolymerElements/paper-dialog-scrollable#^2.2.0",
     "paper-tooltip": "PolymerElements/paper-tooltip#^2.1.1",
     "paper-progress": "PolymerElements/paper-progress#^2.1.0",
-    "paper-dialog": "PolymerElements/paper-dialog#^2.1.1"
+    "paper-dialog": "PolymerElements/paper-dialog#^2.1.1",
+    "paper-item": "PolymerElements/paper-item#^2.1.0"
   }
 }

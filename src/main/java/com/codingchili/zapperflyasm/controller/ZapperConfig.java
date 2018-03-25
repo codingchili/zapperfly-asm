@@ -3,6 +3,7 @@ package com.codingchili.zapperflyasm.controller;
 import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.Future;
 
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +27,8 @@ public class ZapperConfig implements Configurable {
     private Map<String, User> users = new HashMap<>();
     private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
-    private String buildPath;
+    private String buildPath = Paths.get("").toAbsolutePath().toString();
+    private int capacity = 1;
 
 
     public static <T extends Storable> Future<AsyncStorage<T>> getStorage(CoreContext core,
@@ -35,6 +37,7 @@ public class ZapperConfig implements Configurable {
         new StorageLoader<T>(core)
                 .withPlugin(get().getStorage())
                 .withValue(value)
+                .withDB(value.getSimpleName())
                 .build(done -> {
                     if (done.succeeded()) {
                         future.complete(done.result());
@@ -111,5 +114,13 @@ public class ZapperConfig implements Configurable {
      */
     public void setStorage(String storage) {
         this.storage = storage;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 }

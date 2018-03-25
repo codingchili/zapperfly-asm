@@ -3,9 +3,7 @@
 
 <dom-module id="shared-styles">
     <template>
-    </template>
-</dom-module>
-<style>
+        <style>
 
             * {
                 --primary-text-color: var(--dark-theme-text-color);
@@ -16,10 +14,15 @@
                 --error-color: var(--paper-deep-orange-a700);
                 --primary-color: #2196F3;
                 --secondary-color: var(--paper-indigo-300);
+                --paper-progress-container-color: var(--primary-background-color);
                 --faint-text-color: {
                     --primary-text-color: var(--light-theme-text-color);
                     opacity: 0.32;
                 };
+            }
+
+           h4 {
+                opacity: 0.85;
             }
 
             paper-spinner {
@@ -64,6 +67,12 @@
                 margin-top: 32px;
                 margin-left: 0px;
                 margin-right: 0px;
+                cursor: pointer;
+            }
+
+            iron-icon {
+                cursor: pointer;
+                color: var(--primary-color);
             }
 
             paper-progress {
@@ -221,5 +230,6 @@
             paper-swatch-picker.color-picker {
                 --paper-swatch-picker-color-size: 20px;
             }
-
-</style>
+        </style>
+    </template>
+</dom-module>

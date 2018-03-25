@@ -38,7 +38,7 @@ public class Service implements CoreService {
     }
 
     public static void main(String[] args) {
-        system().setHandlers(4)
+        system().setHandlers(1)
                 .setListeners(1)
                 .setServices(1)
                 .setMetrics(false);

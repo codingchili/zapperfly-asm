@@ -19,7 +19,6 @@
                 margin-top: 4px;
                 margin-left: 6px;
                 margin-right: 6px;
-                background-color: var(--primary-background-color);
                 cursor: pointer;
             }
 
@@ -79,11 +78,7 @@
                 position: absolute;
             }
 
-            .cancel:hover {
-                cursor: pointer;
-            }
-
-                        .cloning {
+            .cloning {
             }
 
             .status {
@@ -129,7 +124,6 @@
                 bottom: 0px;
                 right: 8px;
                 width: 56px;
-                --paper-progress-container-color: var(--primary-background-color);
             }
         </style>
         <paper-card id="card" class="item" elevation="1">
@@ -189,11 +183,11 @@
         ready() {
             super.ready();
 
-            if (this.build.end) {
+            if (this.build.end > 0) {
                 this.elapsed = this._time(this.build.start, this.build.end);
             } else {
                 setInterval(() => {
-                    this.elapsed = this._time(this.build.start, new Date().getTime() / 1000);
+                    this.elapsed = this._time(this.build.start, new Date().getTime());
                 }, 1000);
             }
         }
@@ -229,7 +223,7 @@
         }
 
         _time(epoch, now) {
-            let seconds = (now - epoch);
+            let seconds = (now - epoch) / 1000;
 
             let minutes = Math.trunc(seconds / 60);
             seconds = Math.trunc(seconds % 60);
