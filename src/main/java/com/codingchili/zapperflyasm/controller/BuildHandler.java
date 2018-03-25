@@ -55,7 +55,7 @@ public class BuildHandler implements CoreHandler {
                 config.setRepository("https://github.com/codingchili/zapperfly-asm.git");
                 config.setBranch("master");
                 config.setOutputDirs(Arrays.asList("out", "build", "target"));
-                config.setCmdLine("cmd.exe /C gradlew.bat build --info --debug");
+                config.setCmdLine("gradlew build --info --debug");
 
                 // add a test job :P
 

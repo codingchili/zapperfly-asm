@@ -3,6 +3,7 @@ package com.codingchili.zapperflyasm;
 import com.codingchili.zapperflyasm.controller.BuildHandler;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.codingchili.zapperflyasm.model.*;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -15,8 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import com.codingchili.core.context.CoreContext;
-import com.codingchili.core.context.SystemContext;
+import com.codingchili.core.context.*;
 import com.codingchili.core.protocol.Serializer;
 import com.codingchili.core.storage.AsyncStorage;
 import com.codingchili.core.storage.JsonMap;
@@ -42,6 +42,7 @@ public class BuildHandlerTest {
     private ZapperConfig config = ZapperConfig.get();
     private AsyncStorage<BuildConfiguration> configs;
     private AsyncStorage<BuildJob> jobs;
+    private AsyncStorage<LogEvent> logs;
     private CoreContext core;
 
     @Before
@@ -54,29 +55,28 @@ public class BuildHandlerTest {
 
         ZapperConfig.get().setStorage(JsonMap.class.getName());
 
-        ZapperConfig.getStorage(core, BuildJob.class).setHandler(jobs -> {
-            ZapperConfig.getStorage(core, BuildConfiguration.class).setHandler(configs -> {
-                this.configs = configs.result();
-                this.jobs = jobs.result();
+        configs = new JsonMap<>(Future.future(), new StorageContextMock<>(BuildConfiguration.class));
+        jobs = new JsonMap<>(Future.future(), new StorageContextMock<>(BuildJob.class));
+        logs = new JsonMap<>(Future.future(), new StorageContextMock<>(LogEvent.class));
 
-                ClusteredJobManager manager = new ClusteredJobManager(core, this.jobs, logs, this.configs);
-                manager.setVCSProvider(new VCSMock(core));
-                manager.setBuildExecutor(new BuildExecutorMock(true));
+        ClusteredJobManager manager = new ClusteredJobManager(core, this.jobs, logs, this.configs);
+        manager.setVCSProvider(new VCSMock(core));
+        manager.setBuildExecutor(new BuildExecutorMock(true));
 
-                BuildConfiguration build = new BuildConfiguration();
-                build.setRepository(REPOSITORY);
-                build.setBranch(BRANCH);
-                manager.putConfig(build);
+        BuildConfiguration build = new BuildConfiguration();
+        build.setRepository(REPOSITORY);
+        build.setBranch(BRANCH);
+        manager.putConfig(build);
 
-                handler.setManager(manager);
+        logs.put(new LogEvent().setBuild(TEST_ID), (done) -> {});
 
-                this.jobs.put(getTestBuild(), (done) -> async.complete());
-            });
-        });
+        handler.setManager(manager);
+
+        this.jobs.put(getTestBuild(), (done) -> async.complete());
     }
 
     private BuildJob getTestBuild() {
-        BuildJob job = new BuildJob(config, jobs, logs);
+        BuildJob job = new BuildJob(new BuildConfiguration(), (j) -> {}, (j, l) -> {});
         job.setId(TEST_ID);
         job.setCommit("commit");
         job.setDirectory(TEST_DIR);
@@ -124,9 +124,6 @@ public class BuildHandlerTest {
         handler.status(request((response, status) -> {
             test.assertEquals(ACCEPTED, status);
             test.assertEquals(TEST_ID, response.getString(ID_BUILD));
-
-            // no logs should be included when retrieving build status.
-            test.assertTrue(response.getJsonArray(ID_LOG).isEmpty());
             async.complete();
         }, new JsonObject()
                 .put(ID_BUILD, TEST_ID)));
@@ -140,7 +137,7 @@ public class BuildHandlerTest {
             test.assertEquals(ACCEPTED, status);
 
             // logs should be included.
-            test.assertFalse(response.getJsonArray(ID_LOG).isEmpty());
+            test.assertFalse(response.getJsonArray(ID_COLLECTION).isEmpty());
             async.complete();
         }, new JsonObject()
                 .put(ID_BUILD, TEST_ID)));

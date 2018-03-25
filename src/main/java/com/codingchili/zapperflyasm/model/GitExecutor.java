@@ -3,12 +3,9 @@ package com.codingchili.zapperflyasm.model;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.*;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
@@ -26,7 +23,6 @@ public class GitExecutor implements VersionControlSystem {
     private Logger logger;
     private CoreContext core;
 
-
     /**
      * @param core the core context to run the executor on.
      */
@@ -41,30 +37,46 @@ public class GitExecutor implements VersionControlSystem {
         Future<String> future = Future.future();
 
         job.setProgress(Status.CLONING);
+        job.setDirectory(getDirectory(job));
         onBegin(job);
 
         executor.executeBlocking((blocking) -> {
-            job.setDirectory(getDirectory(job));
-
             try {
-                String command = getCommand(job);
+                String command = getCloneCommand(job);
                 job.log(command);
 
-                Process process = new ProcessBuilder(command.split(" "))
-                        .start();
+                AsyncProcess process = new AsyncProcess(core, command).start();
+                process.readProcessOutput(job::log, () -> !job.getProgress().equals(Status.CLONING));
 
-                new ProcessUtil(core).readProcessOutput(process, job);
-                process.waitFor(config().getTimeoutSeconds(), TimeUnit.SECONDS);
+                process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
+                    if (done.succeeded()) {
+                        if (done.result()) {
 
-                if (process.exitValue() == 0) {
-                    onCloned(job);
-                    blocking.complete(job.getDirectory());
-                } else {
-                    blocking.fail(new BuildExecutorException(job, process.exitValue()));
-                }
+                            // cloning competed - get the revision number.
+                            head(job).setHandler(head -> {
+                                if (head.failed()) {
+                                    logger.onError(head.cause());
+                                    blocking.fail(head.cause());
+                                } else {
+                                    onCloned(job);
+                                    blocking.complete();
+                                }
+                            });
+
+                        } else {
+                            Throwable error = new BuildExecutorException(job, "Clone timed out.");
+                            job.setProgress(Status.FAILED);
+                            onError(job, error);
+                            blocking.fail(error);
+                        }
+                    } else {
+                        Throwable error = new BuildExecutorException(job, done.cause().getMessage());
+                        job.setProgress(Status.FAILED);
+                        blocking.fail(error);
+                    }
+                });
             } catch (Throwable e) {
                 job.setProgress(Status.FAILED);
-                job.setMessage(e.getMessage());
                 onError(job, e);
                 blocking.fail(new CoreRuntimeException(e.getMessage()));
             }
@@ -72,16 +84,58 @@ public class GitExecutor implements VersionControlSystem {
         return future;
     }
 
-    private String getCommand(BuildJob job) {
+    private String getCloneCommand(BuildJob job) {
         BuildConfiguration config = job.getConfig();
-        return String.format("git clone -b %s %s %s",
+        return String.format("git clone -b %s %s %s --depth 5",
                 config.getBranch(),
                 config.getRepository(),
                 job.getDirectory());
     }
 
-    private ZapperConfig config() {
-        return ZapperConfig.get();
+    private Future<Void> head(BuildJob job) {
+        Future<Void> future = Future.future();
+
+        executor.executeBlocking(blocking -> {
+            try {
+                String command = getHeadCommand(job);
+                job.log(command);
+                AsyncProcess process = new AsyncProcess(core, command).start();
+                AtomicBoolean complete = new AtomicBoolean(false);
+
+                process.readProcessOutput((line) -> {
+                    String commit = line.split(" ")[0];
+                    job.log(line);
+                    job.setCommit(commit);
+                    job.setMessage(line.replace(commit, "").trim());
+                    job.save();
+                    complete.set(true);
+                }, complete::get);
+
+                process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
+                    if (done.succeeded()) {
+                        if (done.result()) {
+                            onHead(job);
+                        } else {
+                            job.setProgress(Status.FAILED);
+                            onError(job, new BuildExecutorException(job, "Head timed out."));
+                        }
+                        blocking.complete();
+                    } else {
+                        Throwable error = new BuildExecutorException(job, done.cause().getMessage());
+                        job.setProgress(Status.FAILED);
+                        blocking.fail(error);
+                    }
+                    complete.set(true);
+                });
+            } catch (Throwable e) {
+                blocking.fail(e.getCause());
+            }
+        }, false, future);
+        return future;
+    }
+
+    private String getHeadCommand(BuildJob job) {
+        return String.format("git -C %s show --oneline -s", job.getDirectory());
     }
 
     @Override
@@ -122,6 +176,13 @@ public class GitExecutor implements VersionControlSystem {
     private void onCloned(BuildJob job) {
         event(job, "cloneComplete")
                 .put("directory", job.getDirectory())
+                .send();
+    }
+
+    private void onHead(BuildJob job) {
+        event(job, "headComplete")
+                .put("message", job.getMessage())
+                .put("commit", job.getCommit())
                 .send();
     }
 

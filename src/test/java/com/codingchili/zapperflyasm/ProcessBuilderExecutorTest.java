@@ -19,11 +19,12 @@ import com.codingchili.core.context.SystemContext;
 @RunWith(VertxUnitRunner.class)
 public class ProcessBuilderExecutorTest {
     private CoreContext core;
-    private BuildJob job = new BuildJob(new BuildConfiguration());
+    private BuildJob job = new BuildJob();
     private BuildExecutor executor;
 
     @Before
     public void setUp() {
+        job.setConfig(new BuildConfiguration());
         job.setDirectory(TestConfig.TEST_DIR);
         core = new SystemContext();
         executor = new ProcessBuilderExecutor(core);
@@ -39,7 +40,7 @@ public class ProcessBuilderExecutorTest {
     public void testExecuteProcess(TestContext test) {
         Async async = test.async();
 
-        setExecutable("build");
+        job.getConfig().setCmdLine("build");
         executor.build(job).setHandler(build -> {
             test.assertTrue(build.succeeded());
             async.complete();
@@ -50,7 +51,7 @@ public class ProcessBuilderExecutorTest {
     public void testExecuteFailedProcess(TestContext test) {
         Async async = test.async();
 
-        setExecutable("failedbuild");
+        job.getConfig().setCmdLine("failedbuild");
         executor.build(job).setHandler(build -> {
             test.assertTrue(build.failed());
             async.complete();
@@ -61,22 +62,10 @@ public class ProcessBuilderExecutorTest {
     public void testExecuteTimeout(TestContext test) {
         Async async = test.async();
 
-        setExecutable("timeout");
+        job.getConfig().setCmdLine("timeout");
         executor.build(job).setHandler(build -> {
-            test.assertTrue(build.failed());
+            test.assertTrue(build.succeeded());
             async.complete();
         });
-    }
-
-    private void setExecutable(String file) {
-        String os = System.getProperty("os.name");
-
-        if (os.toLowerCase().contains("windows")) {
-            // assume cmd.exe exists on windows.
-            job.getConfig().setCmdLine("cmd.exe /C " + file + ".bat");
-        } else {
-            // assume bash exists on unix.
-            job.getConfig().setCmdLine("/bin/bash -E " + file + ".sh");
-        }
     }
 }

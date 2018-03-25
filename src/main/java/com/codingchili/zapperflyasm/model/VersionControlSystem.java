@@ -14,7 +14,7 @@ public interface VersionControlSystem {
     /**
      * Clones the branch from the configured repository.
      *
-     * @param job clones the
+     * @param job contains the repo and
      * @return return the location the files was cloned to.
      */
     Future<String> clone(BuildJob job);

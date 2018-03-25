@@ -21,7 +21,7 @@ public class BuildJob implements Storable {
     private transient BiConsumer<BuildJob, String> logger;
     private BuildConfiguration config;
     private Long start = ZonedDateTime.now().toInstant().toEpochMilli();
-    private Long end;
+    private Long end = 0L;
     private String id = UUID.randomUUID().toString();
     private String instance = Environment.hostname().orElseGet(() -> UUID.randomUUID().toString());
     private String message;
@@ -39,7 +39,9 @@ public class BuildJob implements Storable {
     }
 
     public void log(String line) {
-        logger.accept(this, line);
+        if (logger != null) {
+            logger.accept(this, line);
+        }
     }
 
     @Override
@@ -106,7 +108,9 @@ public class BuildJob implements Storable {
             this.end = ZonedDateTime.now().toInstant().toEpochMilli();
         }
 
-        saver.accept(this);
+        if (saver != null) {
+            saver.accept(this);
+        }
     }
 
     /**
@@ -188,5 +192,14 @@ public class BuildJob implements Storable {
      */
     public void setSaver(Consumer<BuildJob> saver) {
         this.saver = saver;
+    }
+
+    /**
+     * Attempts to commit changes to the job to storage.
+     */
+    public void save() {
+        if (saver != null) {
+            saver.accept(this);
+        }
     }
 }

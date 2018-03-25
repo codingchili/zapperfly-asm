@@ -39,7 +39,8 @@ public class GitExecutorTest {
     @Ignore("Does not clean up files after it is done - some git index files are still locked after clone.")
     public void cloneRepository(TestContext test) {
         Async async = test.async();
-        BuildJob job = new BuildJob(getConfig());
+        BuildJob job = new BuildJob();
+        job.setConfig(getConfig());
         vcs.clone(job).setHandler(clone -> {
             test.assertTrue(clone.succeeded());
             async.complete();
@@ -50,7 +51,8 @@ public class GitExecutorTest {
     public void deleteDirectory(TestContext test) {
         Async async = test.async();
 
-        BuildJob job = new BuildJob(new BuildConfiguration());
+        BuildJob job = new BuildJob();
+        job.setConfig(new BuildConfiguration());
         job.setDirectory(TestConfig.TEST_DIR + "git-dir");
         Paths.get(job.getDirectory()).toFile().mkdirs();
         vcs.delete(job).setHandler(done -> {

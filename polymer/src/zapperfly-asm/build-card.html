@@ -125,6 +125,7 @@
                 right: 8px;
                 width: 56px;
             }
+
         </style>
         <paper-card id="card" class="item" elevation="1">
             <div class$="status {{_status(build)}}">
@@ -183,13 +184,13 @@
         ready() {
             super.ready();
 
-            if (this.build.end > 0) {
-                this.elapsed = this._time(this.build.start, this.build.end);
-            } else {
-                setInterval(() => {
+            setInterval(() => {
+                if (this.build.end > 0) {
+                    this.elapsed = this._time(this.build.start, this.build.end);
+                } else {
                     this.elapsed = this._time(this.build.start, new Date().getTime());
-                }, 1000);
-            }
+                }
+            }, 1000);
         }
 
         _cancellable(build) {
@@ -244,6 +245,7 @@
         }
     }
     window.customElements.define(BuildCard.is, BuildCard);
+
 
 
 

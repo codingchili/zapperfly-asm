@@ -1,12 +1,7 @@
 package com.codingchili.zapperflyasm.model;
 
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.Future;
 import io.vertx.core.WorkerExecutor;
-
-import java.io.*;
-import java.time.ZonedDateTime;
-import java.util.function.Consumer;
 
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
@@ -21,7 +16,6 @@ import com.codingchili.core.logging.Logger;
  * the working directory.
  */
 public class ProcessBuilderExecutor implements BuildExecutor {
-    private static final int PROCESS_POLL_DELAY = 1000;
     private WorkerExecutor executor;
     private CoreContext core;
     private Logger logger;
@@ -46,12 +40,28 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                 String command = job.getConfig().getCmdLine();
                 job.log(command);
 
-                Process process = new ProcessBuilder(command.split(" "))
-                        .directory(new File(job.getDirectory()))
-                        .start();
+                AsyncProcess process = new AsyncProcess(core, command)
+                        .start(job.getDirectory());
 
-                monitorProcessTimeout(process, blocking, job);
-                new ProcessUtil(core).readProcessOutput(process, job);
+                process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
+                    if (done.succeeded()) {
+                        if (done.result()) {
+                            logEvent("buildComplete", job);
+                            job.setProgress(Status.DONE);
+                        } else {
+                            job.setProgress(Status.FAILED);
+                            logEvent("buildTimeout", job);
+                        }
+                        blocking.complete();
+                    } else {
+                        Throwable error = new BuildExecutorException(job, done.cause().getMessage());
+                        job.setProgress(Status.FAILED);
+                        logError(job, error);
+                        blocking.fail(error);
+                    }
+                });
+
+                process.readProcessOutput(job::log, () -> !job.getProgress().equals(Status.BUILDING));
 
             } catch (Throwable e) {
                 logError(job, e);
@@ -60,44 +70,6 @@ public class ProcessBuilderExecutor implements BuildExecutor {
         }, false, future);
 
         return future;
-    }
-
-    private void monitorProcessTimeout(Process process, Future<Void> blocking, BuildJob job) {
-        core.periodic(() -> PROCESS_POLL_DELAY, "processPoller", (id) -> {
-            try {
-                int exitCode = process.exitValue();
-
-                // process is finished - retrieved exit code without error.
-                core.cancel(id);
-
-                if (exitCode == 0) {
-                    logEvent("buildComplete", job);
-                    job.setProgress(Status.DONE);
-                    blocking.complete();
-                } else {
-                    Throwable error = new BuildExecutorException(job, process.exitValue());
-                    job.setProgress(Status.FAILED);
-                    logError(job, error);
-                    blocking.fail(error);
-                }
-            } catch (IllegalThreadStateException e) {
-                // process not finished yet - if timeout then fail.
-                if (timeout(job)) {
-                    core.cancel(id);
-                    blocking.fail(new BuildTimeoutException(job));
-                    process.destroyForcibly();
-                    logEvent("buildTimeout", job);
-                }
-            }
-        });
-    }
-
-    private boolean timeout(BuildJob job) {
-        return ZonedDateTime.now().minusSeconds(config().getTimeoutSeconds()).toEpochSecond() > job.getStart();
-    }
-
-    private ZapperConfig config() {
-        return ZapperConfig.get();
     }
 
     private void logEvent(String event, BuildJob job) {

@@ -143,13 +143,15 @@ public class ClusteredJobManager implements JobManager {
     }
 
     private void log(BuildJob job, String line) {
-        logs.put(new LogEvent()
-                .setBuild(job.getId())
-                .setLine(line), done -> {
-            if (done.failed()) {
-                logger.onError(done.cause());
-            }
-        });
+        if (line != null && !line.isEmpty()) {
+            logs.put(new LogEvent()
+                    .setBuild(job.getId())
+                    .setLine(line), done -> {
+                if (done.failed()) {
+                    logger.onError(done.cause());
+                }
+            });
+        }
     }
 
     private void handleCompleted(AsyncResult<Void> build, BuildJob job) {
@@ -224,7 +226,7 @@ public class ClusteredJobManager implements JobManager {
         jobs.query(ID_BUILD).matches(".*")
                 .pageSize(24).page(0)
                 .orderBy(START)
-                .order(SortOrder.DESCENDING)
+                .order(SortOrder.ASCENDING)
                 .execute(future);
         return future;
     }
