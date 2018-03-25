@@ -28,7 +28,7 @@ public class ZapperConfig implements Configurable {
     private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
     private String buildPath = Paths.get("").toAbsolutePath().toString();
-    private int capacity = 1;
+    private int capacity = 2;
 
 
     public static <T extends Storable> Future<AsyncStorage<T>> getStorage(CoreContext core,

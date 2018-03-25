@@ -40,7 +40,7 @@ public class ProcessBuilderExecutorTest {
     public void testExecuteProcess(TestContext test) {
         Async async = test.async();
 
-        job.getConfig().setCmdLine("build");
+        job.getConfig().setCmdLine("./build");
         executor.build(job).setHandler(build -> {
             test.assertTrue(build.succeeded());
             async.complete();
@@ -51,7 +51,7 @@ public class ProcessBuilderExecutorTest {
     public void testExecuteFailedProcess(TestContext test) {
         Async async = test.async();
 
-        job.getConfig().setCmdLine("failedbuild");
+        job.getConfig().setCmdLine("./failedbuild");
         executor.build(job).setHandler(build -> {
             test.assertTrue(build.failed());
             async.complete();
@@ -62,7 +62,7 @@ public class ProcessBuilderExecutorTest {
     public void testExecuteTimeout(TestContext test) {
         Async async = test.async();
 
-        job.getConfig().setCmdLine("timeout");
+        job.getConfig().setCmdLine("./timeout");
         executor.build(job).setHandler(build -> {
             test.assertTrue(build.succeeded());
             async.complete();

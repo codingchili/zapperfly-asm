@@ -142,7 +142,8 @@ public class AsyncProcess {
 
         if (os.toLowerCase().contains("windows")) {
             // assume cmd.exe exists on windows.
-            return "cmd.exe /C ";
+            //return "cmd.exe /C "; // todo: fallback to cmd.
+            return "powershell.exe -Command ";
         } else {
             // assume bash exists on unix.
             return "/bin/bash -E ";

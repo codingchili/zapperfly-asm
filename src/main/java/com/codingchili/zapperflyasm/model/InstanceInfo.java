@@ -21,7 +21,7 @@ public class InstanceInfo implements Storable {
 
     public InstanceInfo() {
         ZapperConfig config = ZapperConfig.get();
-        instance = Environment.hostname().orElse(UUID.randomUUID().toString() + "");
+        instance = Environment.hostname().orElse(UUID.randomUUID().toString() + "") + ".2";
         capacity = config.getCapacity();
     }
 

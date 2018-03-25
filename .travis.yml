@@ -7,7 +7,7 @@ script:
 - npm install -g polymer-cli
 - npm install -g bower
 - "./gradlew -version"
-- "./gradlew build"
+- "./gradlew build --info --stacktrace"
 #- "./gradlew archiveZip"
 notifications:
   email: true
