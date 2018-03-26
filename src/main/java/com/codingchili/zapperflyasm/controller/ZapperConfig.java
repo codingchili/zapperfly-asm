@@ -28,7 +28,9 @@ public class ZapperConfig implements Configurable {
     private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
     private String buildPath = Paths.get("").toAbsolutePath().toString();
+    private String groupName = null;
     private int capacity = 2;
+    private String instanceName;
 
 
     public static <T extends Storable> Future<AsyncStorage<T>> getStorage(CoreContext core,
@@ -122,5 +124,27 @@ public class ZapperConfig implements Configurable {
 
     public void setCapacity(int capacity) {
         this.capacity = capacity;
+    }
+
+    /**
+     * @return name of the cluster group that shares jobs.
+     */
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
+
+    /**
+     * @return the name of the instance.
+     */
+    public String getInstanceName() {
+        return instanceName;
+    }
+
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
     }
 }

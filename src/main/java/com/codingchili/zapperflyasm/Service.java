@@ -1,15 +1,13 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.BuildHandler;
-import com.codingchili.zapperflyasm.controller.Webserver;
-import io.vertx.core.CompositeFuture;
+import com.codingchili.zapperflyasm.commandline.HelpCommand;
+import com.codingchili.zapperflyasm.commandline.StartCommand;
 import io.vertx.core.Future;
 
-import java.util.Arrays;
-
-import com.codingchili.core.context.*;
-import com.codingchili.core.listener.*;
-import com.codingchili.core.listener.transport.RestListener;
+import com.codingchili.core.Launcher;
+import com.codingchili.core.context.DefaultCommandExecutor;
+import com.codingchili.core.context.LaunchContext;
+import com.codingchili.core.listener.CoreService;
 
 import static com.codingchili.core.files.Configurations.*;
 
@@ -19,23 +17,6 @@ import static com.codingchili.core.files.Configurations.*;
  * Main zapperfly service to deploy the REST api and the website.
  */
 public class Service implements CoreService {
-    private CoreContext core;
-
-    @Override
-    public void init(CoreContext core) {
-        this.core = core;
-    }
-
-    @Override
-    public void start(Future<Void> start) {
-        CompositeFuture.all(Arrays.asList(
-                core.service(Webserver::new),
-                core.handler(BuildHandler::new),
-                core.listener(() -> new RestListener()
-                        .handler(new BusRouter())
-                        .settings(ListenerSettings::new))
-                        .setHandler(FutureHelper.generic(start))));
-    }
 
     public static void main(String[] args) {
         system().setHandlers(1)
@@ -48,6 +29,17 @@ public class Service implements CoreService {
                 .deployable(Service.class)
                 .setClustered(true);
 
-        new LaunchContext(args).start();
+        LaunchContext context = new LaunchContext(args);
+
+        context.setCommandExecutor(new DefaultCommandExecutor()
+                .add(new HelpCommand())
+                .add(new StartCommand()));
+
+        context.start();
+    }
+
+    @Override
+    public void start(Future<Void> start) {
+        start.complete();
     }
 }

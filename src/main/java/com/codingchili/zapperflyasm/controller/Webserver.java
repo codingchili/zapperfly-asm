@@ -20,6 +20,14 @@ public class Webserver implements CoreService {
     private static final String POLYMER = "polymer/";
     private Logger logger;
     private CoreContext core;
+    private int port;
+
+    /**
+     * @param port the port to start the webserver on.
+     */
+    public Webserver(Integer port) {
+        this.port = port;
+    }
 
     @Override
     public void init(CoreContext core) {
@@ -36,10 +44,15 @@ public class Webserver implements CoreService {
                 .setCachingEnabled(false)
                 .setWebRoot(POLYMER));
 
-        core.vertx().createHttpServer(new ListenerSettings().getHttpOptions(core))
+        core.vertx().createHttpServer(new ListenerSettings()
+                .getHttpOptions(core))
                 .requestHandler(router::accept)
-                .listen(443, FutureHelper.generic(start));
-
-        logger.log("hello service started.");
+                .listen(port, (done) -> {
+                    if (done.succeeded()) {
+                        logger.log("webserver started on port " + port + ".");
+                    } else {
+                        start.fail(done.cause());
+                    }
+                });
     }
 }
