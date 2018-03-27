@@ -2,12 +2,15 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-dialog-behavior/paper-dialog-behavior.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/av-icons.html">
 <link rel="import" href="shared-styles.html">
+<link rel="import" href="tag-input.html">
 
 <dom-module id="build-queue">
     <template>
@@ -46,21 +49,56 @@
 
             .configuration {
                 font-size: 1.0em;
+                margin-bottom: 4px;
                 opacity: 0.85;
                 display: block;
-                cursor: pointer;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                transition: border-color 0.2s;
+                border-style: groove;
+                border-width: 1px;
+                border-color: rgba(255,255,255,0.2);
+                box-sizing: border-box;
+            }
+
+            .configuration:hover {
+                border-color: rgba(255,255,255,0.4);
             }
 
             .branch {
                 text-align: left;
                 float: left;
-                margin-top: 14px;
             }
 
             .repository{
                 text-align: right;
                 float: right;
-                margin-top: 14px;
+            }
+
+            .description {
+                padding-bottom: 12px;
+            }
+
+            .inputs {
+                text-align: left;
+            }
+
+            paper-checkbox {
+                margin-top: 8px;
+            }
+
+            .dialog-content {
+                min-height: 176px;
+            }
+
+            paper-button {
+                margin-top: 22px;
+            }
+
+            .new {
+                margin-top: 12px;
+                display: block;
             }
 
         </style>
@@ -82,16 +120,45 @@
             <h2>Queue</h2>
             <paper-dialog-scrollable>
 
-                Select a configuration to schedule a build.
+                <div class="dialog-content">
 
-                <template is="dom-repeat" items="{{configurations}}" as="configuration">
-                    <paper-item class="configuration" on-click="_schedule">
-                        <span class="branch">[[configuration.branch]]</span>
-                        <span class="repository">[[configuration.repository]]</span>
-                    </paper-item>
-                </template>
+                    <template is="dom-if" if="{{!_saveable(editing, creating)}}">
+                        <div class="description">Select a configuration to schedule a build.</div>
+                        <template is="dom-repeat" items="{{configurations}}" as="configuration">
+                            <paper-item class="configuration">
+                                <iron-icon on-click="_edit" class="icon" icon="icons:settings"></iron-icon>
+                                <span class="branch">[[configuration.branch]]</span>
+                                <span class="repository">[[_trimRepo(configuration.repository)]]</span>
+                                <iron-icon on-click="_schedule" class="icon" icon="av:play-circle-outline"></iron-icon>
+                            </paper-item>
+                        </template>
+
+                        <a href="#" class="new" on-click="_new">new</a>
+                    </template>
+
+                    <template is="dom-if" if="{{_saveable(editing, creating)}}">
+                        <div class="description">Edit or create a new build.</div>
+                        <div class="inputs">
+                            <paper-input autofocus label="repository" value="{{config.repository}}"></paper-input>
+                            <paper-input label="branch" value="{{config.branch}}"></paper-input>
+                            <paper-input label="commandline" value="{{config.cmdLine}}"></paper-input>
+                            <tag-input label="output directories" value="{{tagtext}}" values="{{config.outputDirs}}"></tag-input>
+                        </div>
+                        <paper-checkbox checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
+                    </template>
+
+                </div>
 
             </paper-dialog-scrollable>
+
+            <template is="dom-if" if="{{editing}}">
+                <iron-icon on-click="_delete" class="icon" icon="icons:clear"></iron-icon>
+            </template>
+
+            <template is="dom-if" if="{{_saveable(editing, creating)}}">
+                <iron-icon on-click="_save" class="icon" icon="icons:check"></iron-icon>
+            </template>
+
             <div class="buttons">
                 <paper-button raised dialog-dismiss>Close</paper-button>
             </div>
@@ -114,6 +181,15 @@
                    url="https://localhost:8080/?target=builds&route=build&branch=[[branch]]&repository=[[repository]]"
                    handle-as="json" on-response="_onQueued" debounce-duration="300">
         </iron-ajax>
+
+        <iron-ajax id="updateConfig" method="post" url="https://localhost:8080/"
+                   handle-as="json" on-response="_onUpdated" debounce-duration="300">
+        </iron-ajax>
+
+        <iron-ajax id="deleteConfig"
+                   url="https://localhost:8080/?target=builds&route=unconfigure&branch=[[branch]]&repository=[[repository]]"
+                   handle-as="json" on-response="_onDelete" debounce-duration="300">
+        </iron-ajax>
     </template>
 </dom-module>
 <script>
@@ -125,7 +201,10 @@
 
         constructor() {
             super();
+            this.config = {};
             this.started = false;
+            this.editing = false;
+            this.creating = false;
         }
 
         setBuilds(builds) {
@@ -137,12 +216,59 @@
             this.loader = loader;
         }
 
+        _saveable(editing, creating) {
+            return (editing | creating);
+        }
+
         _start() {
+            this.editing = false;
+            this.creating = false;
             this.$.queue.open();
         }
 
         _show(build) {
             return (build.progress == 'QUEUED')
+        }
+
+        _edit(e) {
+            this.config = e.model.configuration;
+            this.branch = this.config.branch;
+            this.repository = this.config.repository;
+            this.editing = true;
+        }
+
+        _delete() {
+            this.$.deleteConfig.generateRequest();
+        }
+
+        _onDelete() {
+            this.editing = false;
+            this.creating = false;
+            this.$.configurationLoader.generateRequest();
+        }
+
+        _onUpdated() {
+            this._onDelete();
+        }
+
+        _save() {
+            let json = JSON.stringify({'config': this.config, 'route': 'configure', 'target': 'builds'});
+            this.$.updateConfig.body = json;
+            this.$.updateConfig.generateRequest();
+        }
+
+        _new() {
+            this.creating = true;
+            this.config = {};
+        }
+
+        _trimRepo(string) {
+            if (string && string.indexOf('/') > -1) {
+                let parts = string.split('/');
+                return parts[parts.length - 1];
+            } else {
+                return string;
+            }
         }
 
         _schedule(e) {

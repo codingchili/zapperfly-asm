@@ -1,5 +1,8 @@
 package com.codingchili.zapperflyasm.model;
 
+import javax.security.auth.login.Configuration;
+
+import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.listener.RequestWrapper;
 import com.codingchili.core.protocol.Serializer;
@@ -50,7 +53,12 @@ public class BuildRequest extends RequestWrapper {
      * @return a configuration object from the client if present.
      */
     public BuildConfiguration getConfiguration() {
-        return Serializer.unpack(data().getJsonObject(ID_CONFIG), BuildConfiguration.class);
+        BuildConfiguration config = Serializer.unpack(data().getJsonObject(ID_CONFIG), BuildConfiguration.class);
+
+        if (config.getBranch().isEmpty() || config.getRepository().isEmpty()) {
+            throw new CoreRuntimeException("build or branch cannot be null.");
+        }
+        return config;
     }
 
     /**

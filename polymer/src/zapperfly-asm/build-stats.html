@@ -41,6 +41,10 @@
                 color: var(--primary-color);
                 cursor: pointer;
             }
+
+            paper-item {
+                cursor: pointer;
+            }
         </style>
 
         <paper-card elevation="1">
@@ -59,13 +63,23 @@
         <paper-dialog id="about" with-backdrop>
             <h2>About</h2>
             <paper-dialog-scrollable>
-                <div class="log">
 
-                    <p>Zapperfly-asm is a clustered build server with minimal setup!</p>
+                <p>Zapperfly-asm is a clustered build server with minimal setup!</p>
 
-                    <p>Zapperfly is developed by Robin Duda, find the source code and more of my projects on
+                <p>Zapperfly is developed by Robin Duda, find the source code and more of my projects on
                     <a target="_blank" href="https://github.com/codingchili">GITHUB</a>.</p>
-                </div>
+            </paper-dialog-scrollable>
+            <div class="buttons">
+                <paper-button raised dialog-dismiss>Close</paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog id="configure" with-backdrop>
+            <h2>Configuration</h2>
+            <paper-dialog-scrollable>
+
+                cluster-wide settings.
+
             </paper-dialog-scrollable>
             <div class="buttons">
                 <paper-button raised dialog-dismiss>Close</paper-button>
@@ -102,6 +116,10 @@
             this.$.about.open();
         }
 
+        _configure() {
+            this.$.configure.open();
+        }
+
         _updateTime() {
             this.time = new Date().toLocaleString();
         }
@@ -111,5 +129,9 @@
         }
     }
     window.customElements.define(BuildStats.is, BuildStats);
+
+
+
+
 
 </script>

@@ -35,6 +35,9 @@
     "paper-tooltip": "PolymerElements/paper-tooltip#^2.1.1",
     "paper-progress": "PolymerElements/paper-progress#^2.1.0",
     "paper-dialog": "PolymerElements/paper-dialog#^2.1.1",
-    "paper-item": "PolymerElements/paper-item#^2.1.0"
+    "paper-item": "PolymerElements/paper-item#^2.1.0",
+    "paper-input": "PolymerElements/paper-input#^2.2.0",
+    "paper-checkbox": "PolymerElements/paper-checkbox#^2.0.2",
+    "paper-chip": "ThomasCybulski/paper-chip#2.0.16"
   }
 }
