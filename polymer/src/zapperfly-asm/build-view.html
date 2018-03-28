@@ -16,6 +16,7 @@
                 height: 100%;
                 text-align: center;
                 min-height: 326px;
+                padding-bottom: 32px;
             }
 
             paper-card {
@@ -116,7 +117,7 @@
         </paper-dialog>
 
         <iron-ajax id="logLoader"
-                   url="https://localhost:8080/?target=builds&route=log&id=[[build.id]]&offset=[[offset]]"
+                   url="/api/?target=builds&route=log&id=[[build.id]]&offset=[[offset]]"
                    handle-as="json"
                    on-response="_onBuildLog" debounce-duration="300">
         </iron-ajax>

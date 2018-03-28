@@ -74,7 +74,7 @@
                     <build-executors id="executors"></build-executors>
                 </div>
 
-                <iron-ajax auto url="https://localhost:8080/?target=builds&route=list" handle-as="json"
+                <iron-ajax auto url="/api/?target=builds&route=list" handle-as="json"
                            on-response="_onBuildsDownloaded" id="statusLoader" debounce-duration="300">
                 </iron-ajax>
 

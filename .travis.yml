@@ -8,7 +8,7 @@ script:
 - npm install -g bower
 - "./gradlew -version"
 - "./gradlew build --info --stacktrace"
-#- "./gradlew archiveZip"
+- "./gradlew archiveZip"
 notifications:
   email: true
 before_cache:

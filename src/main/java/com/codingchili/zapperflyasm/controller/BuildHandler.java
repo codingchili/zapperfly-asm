@@ -60,9 +60,7 @@ public class BuildHandler implements CoreHandler {
                 // add a test job :P
 
                 configs.put(config, (put) -> {
-                    if (put.succeeded()) {
-                        System.out.println("config put.");
-                    } else {
+                    if (put.failed()) {
                         System.err.println(throwableToString(put.cause()));
                     }
                 });

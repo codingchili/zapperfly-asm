@@ -11,6 +11,7 @@
                 display: block;
                 width: 30%;
                 margin-right: 6px;
+                padding-bottom: 32px;
             }
 
             .title {
@@ -24,6 +25,7 @@
                 margin-left: 6px;
                 margin-right: 6px;
                 cursor: pointer;
+                flex-flow: column;
             }
 
             .executor:hover {
@@ -34,7 +36,7 @@
             .status {
                 position: absolute;
                 right: 6px;
-                top: 10px;
+                top: 4px;
             }
 
             .online {
@@ -53,7 +55,7 @@
             }
 
             .capacity {
-                margin-top: 6px;
+                margin-top: 8px;
                 margin-left: 16px;
                 font-size: 0.65em;
                 opacity: 0.85;
@@ -70,6 +72,7 @@
                 margin: auto;
                 margin-top: 12px;
             }
+
 
         </style>
 
@@ -102,13 +105,15 @@
                     </template>
                     <div class="capacity">
                         Executing: [[executor.builds]] <br>
+                    </div>
+                    <div class="capacity">
                         Capacity: [[executor.capacity]]
                     </div>
                 </paper-card>
             </template>
         </div>
 
-        <iron-ajax auto id="executorsLoader" url="https://localhost:8080/?target=builds&route=executors"
+        <iron-ajax auto id="executorsLoader" url="/api/?target=builds&route=executors"
                    handle-as="json"
                    on-response="_onExecutors" debounce-duration="300">
         </iron-ajax>
@@ -142,6 +147,7 @@
         }
     }
     window.customElements.define(BuildExecutors.is, BuildExecutors);
+
 
 
 </script>

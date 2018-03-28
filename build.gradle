@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 apply plugin: 'maven'
 apply plugin: 'java'
 apply plugin: 'idea'
@@ -18,6 +20,12 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    compile 'com.github.codingchili.chili-core:core:1.0.24-SNAPSHOT@jar'
+    testCompile 'io.vertx:vertx-unit:3.5.1'
+    testCompile 'junit:junit:4.12'
+}
+
 test {
     testLogging {
         exceptionFormat "full"
@@ -25,9 +33,77 @@ test {
     reports.html.enabled = false
 }
 
+task sourcesJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
 
-dependencies {
-    compile 'com.github.codingchili.chili-core:core:1.0.24-SNAPSHOT@jar'
-    testCompile 'io.vertx:vertx-unit:3.5.1'
-    testCompile 'junit:junit:4.12'
+ext {
+    polymerBin = Os.isFamily(Os.FAMILY_WINDOWS) ? 'polymer.cmd' : 'polymer'
+    bowerBin = Os.isFamily(Os.FAMILY_WINDOWS) ? 'bower.cmd' : 'bower'
+}
+
+task polymer {
+    doLast {
+        exec {
+            workingDir "./polymer"
+            commandLine = [bowerBin, "install"]
+        }
+        exec {
+            workingDir "./polymer"
+            commandLine = [polymerBin, "build"]
+        }
+    }
+}
+
+jar {
+    zip64 true
+    from {
+        (configurations.runtime).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    manifest {
+        attributes 'Implementation-Title': 'zapperfly',
+                'Implementation-Version': version,
+                'Main-Class': 'com.codingchili.zapperflyasm.Service'
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.SF'
+}
+
+task archiveZip(type: Zip, dependsOn: [subprojects.jar, polymer]) {
+    baseName = 'zapperfly'
+
+    from('script') {
+        fileMode = 0755
+        include '**/run.sh'
+        include '**/run.bat'
+        expand(jar: jar.outputs.files[0].name, app: project.name, version: project.version)
+    }
+
+    from (jar.outputs.files) {
+        into('/')
+    }
+
+    from('./') {
+        include 'application.json'
+        into('/')
+    }
+
+    from('polymer/build/default/') {
+        into('/polymer')
+    }
+
+    into('/')
+}
+
+task alljavadoc(type: Javadoc) {
+    source subprojects.collect { it.sourceSets.main.allJava }
+    classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
+    destinationDir = file("${buildDir}/docs/javadoc")
+}
+
+task archiveJavadoc(type: Zip, dependsOn: alljavadoc) {
+    baseName = 'javadocs'
+    from fileTree(file("${buildDir}/docs/javadoc"))
 }

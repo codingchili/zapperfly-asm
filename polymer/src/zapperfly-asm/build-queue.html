@@ -172,22 +172,22 @@
             </template>
         </template>
 
-        <iron-ajax auto id="configurationLoader" url="https://localhost:8080/?target=builds&route=configurations"
+        <iron-ajax auto id="configurationLoader" url="/api/?target=builds&route=configurations"
                    handle-as="json"
                    on-response="_onConfiguration" debounce-duration="300">
         </iron-ajax>
 
         <iron-ajax id="buildScheduler"
-                   url="https://localhost:8080/?target=builds&route=build&branch=[[branch]]&repository=[[repository]]"
+                   url="/api/?target=builds&route=build&branch=[[branch]]&repository=[[repository]]"
                    handle-as="json" on-response="_onQueued" debounce-duration="300">
         </iron-ajax>
 
-        <iron-ajax id="updateConfig" method="post" url="https://localhost:8080/"
+        <iron-ajax id="updateConfig" method="post" url="/api/"
                    handle-as="json" on-response="_onUpdated" debounce-duration="300">
         </iron-ajax>
 
         <iron-ajax id="deleteConfig"
-                   url="https://localhost:8080/?target=builds&route=unconfigure&branch=[[branch]]&repository=[[repository]]"
+                   url="/api/?target=builds&route=unconfigure&branch=[[branch]]&repository=[[repository]]"
                    handle-as="json" on-response="_onDelete" debounce-duration="300">
         </iron-ajax>
     </template>

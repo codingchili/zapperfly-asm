@@ -1,0 +1,14 @@
+{
+  "name": "Zapperfly ASM",
+  "short_name": "Zapperfly",
+  "description": "Zapperfly build server.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#3E2723",
+  "icons": [{
+    "src": "fly-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }]
+}

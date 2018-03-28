@@ -49,17 +49,12 @@ public class StartCommand implements Command {
             List<Future> deployments = new ArrayList<>();
 
             if (executor.hasProperty(WEBSITE) || executor.hasProperty(PORT)) {
-                deployments.add(core.service(() -> new Webserver(
+                deployments.add(core.listener(() -> new Webserver(
                         Integer.parseInt(executor.getProperty(PORT)
-                                .orElse(DEFAULT_PORT)))));
+                                .orElse(DEFAULT_PORT)))
+                        .handler(new BusRouter())));
             }
-
             deployments.add(core.handler(BuildHandler::new));
-            deployments.add(core.listener(() ->
-                    new RestListener()
-                            .handler(new BusRouter())
-                            .settings(ListenerSettings::new)));
-
             CompositeFuture.all(deployments).setHandler(done -> {
                 start.complete(true);
             });
@@ -98,13 +93,5 @@ public class StartCommand implements Command {
     @Override
     public String toString() {
         return getDescription();
-    }
-
-    public static void main(String[] args) {
-        System.out.println(args.length);
-
-        new DefaultCommandExecutor()
-                .add(new HelpCommand())
-                .add(new StartCommand()).execute(args);
     }
 }
