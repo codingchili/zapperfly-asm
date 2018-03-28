@@ -226,7 +226,7 @@ public class ClusteredJobManager implements JobManager {
         jobs.query(ID_BUILD).matches(".*")
                 .pageSize(24).page(0)
                 .orderBy(START)
-                .order(SortOrder.ASCENDING)
+                .order(SortOrder.DESCENDING)
                 .execute(future);
         return future;
     }

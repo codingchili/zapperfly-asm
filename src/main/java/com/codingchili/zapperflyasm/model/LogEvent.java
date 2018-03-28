@@ -1,5 +1,7 @@
 package com.codingchili.zapperflyasm.model;
 
+import com.hazelcast.core.PartitionAware;
+
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -12,7 +14,7 @@ import static com.codingchili.zapperflyasm.model.BuildRequest.ID_TIME;
  *
  * A log record for build outputs.
  */
-public class LogEvent implements Storable {
+public class LogEvent implements Storable, PartitionAware<String> {
     private String id = UUID.randomUUID().toString();
     private Long time = ZonedDateTime.now().toInstant().toEpochMilli();
     private String build;
@@ -72,5 +74,10 @@ public class LogEvent implements Storable {
         } else {
             return 0;
         }
+    }
+
+    @Override
+    public String getPartitionKey() {
+        return build;
     }
 }
