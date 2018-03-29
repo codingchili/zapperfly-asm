@@ -2,24 +2,25 @@ package com.codingchili.zapperflyasm.commandline;
 
 import io.vertx.core.Future;
 
-import com.codingchili.core.context.Command;
-import com.codingchili.core.context.CommandExecutor;
+import com.codingchili.core.context.*;
 import com.codingchili.core.logging.ConsoleLogger;
 import com.codingchili.core.logging.Logger;
 
 /**
  * @author Robin Duda
+ * <p>
+ * A command to list all available commands.
  */
 public class HelpCommand implements Command {
     private Logger logger = new ConsoleLogger(HelpCommand.class);
 
     @Override
-    public void execute(Future<Boolean> future, CommandExecutor executor) {
+    public void execute(Future<CommandResult> future, CommandExecutor executor) {
         logger.log("Available commands");
         executor.list().forEach(command -> {
             logger.log(command.toString());
         });
-        future.complete(true);
+        future.complete(CommandResult.SHUTDOWN);
     }
 
     @Override

@@ -20,7 +20,7 @@
             }
 
             .executor {
-                margin-bottom: 6px;
+                margin-bottom: 4px;
                 display: flex;
                 margin-left: 6px;
                 margin-right: 6px;
@@ -54,12 +54,19 @@
                 opacity: 0.85;
             }
 
+            .builds {
+                margin-top: 8px;
+                margin-left: 16px;
+                font-size: 0.65em;
+                opacity: 0.85;
+            }
+
             .capacity {
                 margin-top: 8px;
                 margin-left: 16px;
                 font-size: 0.65em;
                 opacity: 0.85;
-                padding-bottom: 8px;
+                padding-bottom: 12px;
             }
 
             .items {
@@ -72,7 +79,6 @@
                 margin: auto;
                 margin-top: 12px;
             }
-
 
         </style>
 
@@ -103,7 +109,7 @@
                             online
                         </div>
                     </template>
-                    <div class="capacity">
+                    <div class="builds">
                         Executing: [[executor.builds]] <br>
                     </div>
                     <div class="capacity">
@@ -113,7 +119,7 @@
             </template>
         </div>
 
-        <iron-ajax auto id="executorsLoader" url="/api/?target=builds&route=executors"
+        <iron-ajax auto id="executorsLoader" url="/api/?target=builds&route=instances"
                    handle-as="json"
                    on-response="_onExecutors" debounce-duration="300">
         </iron-ajax>

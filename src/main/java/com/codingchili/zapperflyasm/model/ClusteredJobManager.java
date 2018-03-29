@@ -22,8 +22,9 @@ import static com.codingchili.zapperflyasm.model.BuildRequest.*;
  * Manages jobs - distributes across the cluster.
  */
 public class ClusteredJobManager implements JobManager {
-    public static final String BUILD = "build";
-    public static final String PROGRESS = "progress";
+    private static final String BUILD = "build";
+    private static final String PROGRESS = "progress";
+    private static final String LINE = "line";
     private AsyncStorage<BuildConfiguration> configs;
     private AsyncStorage<BuildJob> jobs;
     private AsyncStorage<LogEvent> logs;
@@ -211,7 +212,7 @@ public class ClusteredJobManager implements JobManager {
     }
 
     @Override
-    public Future<BuildJob> get(String buildId) {
+    public Future<BuildJob> getBuild(String buildId) {
         Future<BuildJob> future = Future.future();
         jobs.get(buildId, future);
         return future;
@@ -236,15 +237,12 @@ public class ClusteredJobManager implements JobManager {
     }
 
     @Override
-    public Future<Collection<LogEvent>> getLog(String buildId, int logOffset) {
+    public Future<Collection<LogEvent>> getLog(String buildId, Long time) {
         Future<Collection<LogEvent>> future = Future.future();
         QueryBuilder<LogEvent> query = logs.query(BUILD).equalTo(buildId)
+                .and(ID_TIME).between(time + 1, Long.MAX_VALUE)
                 .orderBy(ID_TIME)
                 .order(SortOrder.ASCENDING);
-
-        if (logOffset > 0) {
-            query.pageSize(logOffset).page(1);
-        }
 
         query.execute(done -> {
             if (done.succeeded()) {

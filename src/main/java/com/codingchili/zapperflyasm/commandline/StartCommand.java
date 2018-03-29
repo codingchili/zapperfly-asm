@@ -11,25 +11,24 @@ import java.util.*;
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.*;
 import com.codingchili.core.listener.BusRouter;
-import com.codingchili.core.listener.ListenerSettings;
-import com.codingchili.core.listener.transport.RestListener;
 
 import static com.codingchili.core.files.Configurations.system;
 
 /**
  * @author Robin Duda
+ *
+ * Command for starting the application and parsing some commandline options.
  */
 public class StartCommand implements Command {
     private ZapperConfig config = ZapperConfig.get();
     private static final String WEBSITE = "--website";
-    private static final String PORT = "--port";
     private static final String DEFAULT_PORT = "443";
     private static final String NAME = "--name";
     private static final String GROUP = "--group";
     private static final String CAPACITY = "--capacity";
 
     @Override
-    public void execute(Future<Boolean> start, CommandExecutor executor) {
+    public void execute(Future<CommandResult> start, CommandExecutor executor) {
         loadInstanceName(executor);
         loadInstanceGroup(executor);
         loadCapacity(executor);
@@ -48,15 +47,21 @@ public class StartCommand implements Command {
             CoreContext core = clustered.result();
             List<Future> deployments = new ArrayList<>();
 
-            if (executor.hasProperty(WEBSITE) || executor.hasProperty(PORT)) {
+            if (executor.hasProperty(WEBSITE)) {
                 deployments.add(core.listener(() -> new Webserver(
-                        Integer.parseInt(executor.getProperty(PORT)
+                        Integer.parseInt(executor.getProperty(WEBSITE)
                                 .orElse(DEFAULT_PORT)))
                         .handler(new BusRouter())));
             }
             deployments.add(core.handler(BuildHandler::new));
-            CompositeFuture.all(deployments).setHandler(done -> {
-                start.complete(true);
+
+            CompositeFuture.all(deployments).setHandler(deploy -> {
+                if (deploy.succeeded()) {
+                    start.complete(CommandResult.STARTED);
+                } else {
+                    start.fail(deploy.cause());
+                    core.close();
+                }
             });
         });
     }
@@ -79,8 +84,8 @@ public class StartCommand implements Command {
 
     @Override
     public String getDescription() {
-        return "--website starts with the website on the default port " + DEFAULT_PORT + "\n" +
-                "\t\t--port starts the website on the given port.\n"+
+        return "start " +
+                "\t\t--website starts with the website on the default port " + DEFAULT_PORT + "\n" +
                 "\t\t--name specifies the instance name.\n" +
                 "\t\t--group specifies the cluster grouping.";
     }

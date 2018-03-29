@@ -49,18 +49,11 @@
           #logDialog {
             position: absolute;
             top: 0;
-            left: 10%;
-            right: 10%;
-            margin: 24px;
-            padding: 0;
+            left: 0;
             min-width: 80%;
-          }
-
-          @media (max-width: 528px) {
-            #logDialog {
-                margin: 0;
-                left: 0;
-            }
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
           }
 
           .line {
@@ -78,7 +71,6 @@
           hr {
             opacity: 0.35;
           }
-
         </style>
 
         <h4>
@@ -105,9 +97,9 @@
                 <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
 
                 <template is="dom-repeat" items="{{log}}" as="event">
-                    <span class="line">[{{_line()}}]</span>
-                    <span class="date">[[_toDate(event.time)]]</span>
-                    <span class="text">[[event.line]]</span>
+                        <span class="line">[{{_line()}}]</span>
+                        <span class="date">[[_toDate(event.time)]]</span>
+                        <span class="text">[[event.line]]</span>
                     <hr>
                 </template>
             </paper-dialog-scrollable>
@@ -137,6 +129,7 @@
 
         constructor() {
             super();
+            this.LOG_POLL = 2500;
             this.started = false;
             this.build = null;
             this.log = [];
@@ -145,7 +138,7 @@
                 if (this.build != null) {
                     this._reload();
                 }
-            }, 3000);
+            }, this.LOG_POLL);
         }
 
         setBuilds(builds) {
@@ -172,13 +165,39 @@
         }
 
         _onBuildLog(event, request) {
-            this.log.push(...request.response.collection);
-            this.notifyPath('log');
-            this.notifySplices('log');
-            this.offset += request.response.collection.length;
-            this.$.logDialog.notifyResize();
-            this.$.terminal.scrollTop += 300;
+            let events = request.response.collection;
+
+            // on first load show all items at once.
+            if (this.offset == 0) {
+                this.log.push(...events);
+                this._updateLog();
+            } else {
+                // delay each lines appearance by its timestamp plus the polling interval.
+                // simulates real-time logging to screen.
+                let current = this.build;
+                for (let i in events) {
+                    let event = events[i];
+                    setTimeout(() => {
+                        if (current.id == this.build.id) {
+                            this.log.push(event);
+                            this._updateLog();
+                        }
+                    }, this.LOG_POLL - (new Date().getTime() - event.time));
+                }
+            }
+
+            if (events.length > 0) {
+                this.offset = events[events.length -1].time;
+            }
             this.loading = false;
+        }
+
+        _updateLog() {
+            this.notifySplices('log');
+            this.$.logDialog.notifyResize();
+            setTimeout(() => {
+                this.$.terminal.$.scrollable.scrollTop = Number.MAX_SAFE_INTEGER;
+            }, 1);
         }
 
         _reload() {
@@ -198,5 +217,6 @@
         }
     }
     window.customElements.define(BuildView.is, BuildView);
+
 
 </script>

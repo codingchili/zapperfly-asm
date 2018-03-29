@@ -21,6 +21,12 @@ public interface JobManager {
      */
     Future<BuildJob> submit(BuildConfiguration config);
 
+    /**
+     * Lists all avilable instances that have joined the cluster at some point.
+     * This method may return instances that are offline.
+     *
+     * @return callback.
+     */
     Future<Collection<InstanceInfo>> instances();
 
     /**
@@ -52,7 +58,7 @@ public interface JobManager {
      * @param buildId the ID of the build to retrieve.
      * @return a build matching the given build ID.
      */
-    Future<BuildJob> get(String buildId);
+    Future<BuildJob> getBuild(String buildId);
 
     /**
      * Adds configuration for a repo and branch combination.
@@ -90,5 +96,12 @@ public interface JobManager {
      */
     Future<Collection<BuildJob>> getAll();
 
-    Future<Collection<LogEvent>> getLog(String buildId, int logOffset);
+    /**
+     * Retrieves the log of the given build starting from the given line number.
+     *
+     * @param buildId the build to retrieve the logs from.
+     * @param time the time of the last read log message.
+     * @return callback.
+     */
+    Future<Collection<LogEvent>> getLog(String buildId, Long time);
 }

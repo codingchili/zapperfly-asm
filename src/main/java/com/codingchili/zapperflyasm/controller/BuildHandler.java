@@ -156,13 +156,13 @@ public class BuildHandler implements CoreHandler {
     }
 
     @Api
-    @Description("Lists all available executors.")
-    public void executors(BuildRequest request) {
+    @Description("Lists all executors/instances that has joined the cluster at some point.")
+    public void instances(BuildRequest request) {
         manager.instances().setHandler(request::result);
     }
 
     private void getJob(BuildRequest request, Consumer<BuildJob> consumer) {
-        manager.get(request.getBuildId()).setHandler(done -> {
+        manager.getBuild(request.getBuildId()).setHandler(done -> {
             if (done.succeeded()) {
                 consumer.accept(done.result());
             } else {

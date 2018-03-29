@@ -39,13 +39,13 @@ public class BuildRequest extends RequestWrapper {
     /**
      * @return the line number offset for log data to be returned.
      */
-    public int getLogOffset() {
+    public Long getLogOffset() {
         String offset = data().getString(ID_OFFSET);
 
         if (offset == null) {
-            return 0;
+            return 0L;
         } else {
-            return Integer.parseInt(offset);
+            return Long.parseLong(offset);
         }
     }
 

@@ -68,11 +68,15 @@ public class Webserver implements CoreListener {
                 .requestHandler(router::accept)
                 .listen(port, (done) -> {
                     if (done.succeeded()) {
-                        logger.log("webserver started on port " + port + ".");
                         handler.start(start);
                     } else {
                         start.fail(done.cause());
                     }
                 });
+    }
+
+    @Override
+    public String toString() {
+        return handler.getClass().getSimpleName() + " on :" + port;
     }
 }
