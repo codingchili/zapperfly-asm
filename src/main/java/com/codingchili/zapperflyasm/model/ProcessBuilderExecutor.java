@@ -1,5 +1,6 @@
 package com.codingchili.zapperflyasm.model;
 
+import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.Future;
 import io.vertx.core.WorkerExecutor;
 
@@ -46,30 +47,50 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                 process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
                     if (done.succeeded()) {
                         if (done.result()) {
-                            logEvent("buildComplete", job);
-                            job.setProgress(Status.DONE);
+                            onSuccess(job);
                         } else {
-                            job.setProgress(Status.FAILED);
-                            logEvent("buildTimeout", job);
+                            onTimeout(job);
                         }
                         blocking.complete();
                     } else {
                         Throwable error = new BuildExecutorException(job, done.cause().getMessage());
-                        job.setProgress(Status.FAILED);
-                        logError(job, error);
+                        onError(job, done.cause());
                         blocking.fail(error);
                     }
                 });
 
                 process.readProcessOutput(job::log, () -> !job.getProgress().equals(Status.BUILDING));
-
             } catch (Throwable e) {
-                logError(job, e);
+                onError(job, e);
                 blocking.fail(new CoreRuntimeException(e.getMessage()));
             }
         }, false, future);
 
         return future;
+    }
+
+    private void onError(BuildJob job, Throwable error) {
+        job.setProgress(Status.FAILED);
+        job.log("Build failed: " + error.getMessage());
+        logger.event("buildError")
+                .put("build", job.getDirectory())
+                .put("branch", job.getConfig().getBranch())
+                .put("repo", job.getConfig().getRepository())
+                .put("cmd", job.getConfig().getCmdLine())
+                .put("err", CoreStrings.throwableToString(error))
+                .send();
+    }
+
+    private void onTimeout(BuildJob job) {
+        job.setProgress(Status.FAILED);
+        logEvent("buildTimeout", job);
+        job.log("Build timed out after " + ZapperConfig.get().getTimeoutSeconds() + "s.");
+    }
+
+    private void onSuccess(BuildJob job) {
+        logEvent("buildComplete", job);
+        job.setProgress(Status.DONE);
+        job.log("Build completed successfully.");
     }
 
     private void logEvent(String event, BuildJob job) {
@@ -78,13 +99,6 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                 .put("repo", config.getRepository())
                 .put("branch", config.getBranch())
                 .put("cmdline", config.getCmdLine())
-                .send();
-    }
-
-    private void logError(BuildJob job, Throwable e) {
-        logger.event("buildError")
-                .put("build", job.getDirectory())
-                .put("err", CoreStrings.throwableToString(e))
                 .send();
     }
 }

@@ -3,6 +3,7 @@ package com.codingchili.zapperflyasm.model;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.*;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +37,7 @@ public class GitExecutor implements VersionControlSystem {
     public Future<String> clone(BuildJob job) {
         Future<String> future = Future.future();
 
+        job.setStart(ZonedDateTime.now().toInstant().toEpochMilli());
         job.setProgress(Status.CLONING);
         job.setDirectory(getDirectory(job));
         onBegin(job);

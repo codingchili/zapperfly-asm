@@ -80,14 +80,14 @@ public class ClusteredJobManager implements JobManager {
     private void poll() {
         if (instance.getBuilds() < instance.getCapacity()) {
             jobs.query(PROGRESS).equalTo(Status.QUEUED)
+                    .order(SortOrder.DESCENDING)
+                    .orderBy(START)
                     .pageSize(1)
                     .page(0)
                     .execute(query -> {
                         if (query.succeeded() && query.result().size() > 0) {
-                            begin();
                             BuildJob job = query.result().iterator().next();
-                            job.setSaver(this::save);
-                            job.setLogger(this::log);
+                            begin(job);
 
                             // clone the repository and the branch.
                             vcs.clone(job).setHandler(clone -> {
@@ -107,8 +107,11 @@ public class ClusteredJobManager implements JobManager {
         }
     }
 
-    private void begin() {
+    private void begin(BuildJob job) {
         instance.setBuilds(instance.getBuilds() + 1);
+        job.setSaver(this::save);
+        job.setLogger(this::log);
+        job.log("Build starting on executor '" + instance.getInstance() + "' ..");
         save();
     }
 
@@ -122,6 +125,7 @@ public class ClusteredJobManager implements JobManager {
         Future<BuildJob> future = Future.future();
         BuildJob job = new BuildJob();
         job.setConfig(config);
+        log(job, "Build " + job.getId() + " queued.");
 
         // add the job to the queue.
         jobs.put(job, (put) -> {
