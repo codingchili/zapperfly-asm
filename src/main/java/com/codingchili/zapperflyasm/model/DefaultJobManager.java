@@ -188,7 +188,6 @@ public class DefaultJobManager implements JobManager {
             if (values.succeeded()) {
                 future.complete(values.result().stream().peek(i -> {
                     if (i.getUpdated() < System.currentTimeMillis() - INSTANCE_TIMEOUT) {
-                        System.out.println("instance " + i.getId() + " taken offline, last update " + i.getUpdated() + " current is " + System.currentTimeMillis());
                         if (i.isOnline()) {
                             i.setOnline(false);
                             failAllBuildsOnInstance(i);
@@ -210,7 +209,6 @@ public class DefaultJobManager implements JobManager {
                 .execute(query -> {
                     if (query.succeeded()) {
                         query.result().forEach(job -> {
-                            System.out.println("log job fail " + job.getId() + " on instance " + job.getInstance() + " | " + instance.getId() + " gone offline.");
                             job.setProgress(Status.FAILED);
                             log(job, String.format("'%s' has gone offline - build failed.", job.getInstance()));
                             save(job);

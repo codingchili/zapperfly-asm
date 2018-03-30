@@ -17,6 +17,13 @@ public class ZapperContext extends SystemContext {
     private DefaultJobManager builds;
 
     /**
+     * @param core an existing context.
+     */
+    public ZapperContext(CoreContext core) {
+        super(core);
+    }
+
+    /**
      * Creates the context asynchronously.
      *
      * @param core the core-context to use.
@@ -37,7 +44,7 @@ public class ZapperContext extends SystemContext {
                 AsyncStorage<LogEvent> logs = done.result().resultAt(2);
                 AsyncStorage<InstanceInfo> instances = done.result().resultAt(3);
 
-                ZapperContext zapper = new ZapperContext();
+                ZapperContext zapper = new ZapperContext(core);
 
                 zapper.builds = new DefaultJobManager(core, jobs, logs, instances);
                 zapper.configurations = new DefaultConfigurationManager(configs);

@@ -37,11 +37,7 @@ public class ConfigurationHandler implements CoreHandler {
         config.setBranch("master");
         config.setOutputDirs(Arrays.asList("out", "build", "target"));
         config.setCmdLine("./gradlew build --info --debug");
-        configurations.putConfig(config).setHandler(done -> {
-            if (done.failed()) {
-                throw new CoreRuntimeException(done.cause().getMessage());
-            }
-        });
+        configurations.putConfig(config).setHandler(start);
     }
 
     @Api

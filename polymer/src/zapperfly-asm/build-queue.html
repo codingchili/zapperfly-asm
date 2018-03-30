@@ -4,6 +4,7 @@
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input-container.html">
 <link rel="import" href="../../bower_components/paper-dialog-behavior/paper-dialog-behavior.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
@@ -35,7 +36,6 @@
            }
 
             .build {
-                color: var(--primary-color);
                 cursor: pointer;
                 margin-left: 10px;
                 position: absolute;
@@ -143,9 +143,29 @@
                     <template is="dom-if" if="{{_saveable(editing, creating)}}">
                         <div class="description">Edit or create a new build.</div>
                         <div class="inputs">
-                            <paper-input autofocus label="repository" value="{{config.repository}}"></paper-input>
-                            <paper-input label="branch" value="{{config.branch}}"></paper-input>
-                            <paper-input label="commandline" value="{{config.cmdLine}}"></paper-input>
+
+                            <!-- paper-input is broken; unable to set text color. use iron-input. -->
+                            <paper-input-container>
+                                <label slot="label">repository</label>
+                                <iron-input autofocus slot="input" bind-value="{{config.repository}}">
+                                    <input>
+                                </iron-input>
+                            </paper-input-container>
+
+                            <paper-input-container>
+                                <label slot="label">branch</label>
+                                <iron-input slot="input" bind-value="{{config.branch}}">
+                                    <input>
+                                </iron-input>
+                            </paper-input-container>
+
+                            <paper-input-container>
+                                <label slot="label">commandline</label>
+                                <iron-input slot="input" bind-value="{{config.cmdLine}}">
+                                    <input>
+                                </iron-input>
+                            </paper-input-container>
+
                             <tag-input label="output directories" value="{{tagtext}}" values="{{config.outputDirs}}"></tag-input>
                         </div>
                         <paper-checkbox checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
@@ -209,7 +229,6 @@
 
         constructor() {
             super();
-            this.config = {};
             this.builds = [];
             this.started = false;
             this.editing = false;
@@ -277,7 +296,7 @@
 
         _new() {
             this.creating = true;
-            this.config = {};
+            this.config = {'outputDirs': []};
         }
 
         _trimRepo(string) {

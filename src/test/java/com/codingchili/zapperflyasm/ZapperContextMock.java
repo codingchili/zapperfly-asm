@@ -1,5 +1,6 @@
 package com.codingchili.zapperflyasm;
 
+import com.codingchili.core.context.SystemContext;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.codingchili.zapperflyasm.controller.ZapperContext;
 import com.codingchili.zapperflyasm.model.*;
@@ -21,6 +22,10 @@ public class ZapperContextMock extends ZapperContext {
     private AsyncStorage<InstanceInfo> instances;
     private AsyncStorage<BuildJob> jobs;
     private AsyncStorage<LogEvent> logs;
+
+    public ZapperContextMock() {
+        super(new SystemContext());
+    }
 
     /**
      * Creates a new mock context asynchronously.
