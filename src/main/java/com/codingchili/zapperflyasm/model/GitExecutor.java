@@ -177,6 +177,7 @@ public class GitExecutor implements VersionControlSystem {
         core.vertx().fileSystem().deleteRecursive(job.getDirectory(), true, done -> {
             if (done.succeeded()) {
                 job.log("Cleaning completed.");
+                future.complete();
             } else {
                 job.log("Failed to clean: " + throwableToString(done.cause()));
                 future.fail(done.cause());
