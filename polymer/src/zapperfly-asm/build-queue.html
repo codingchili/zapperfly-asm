@@ -112,6 +112,10 @@
                 opacity: var(--opacity);
             }
 
+            .icon-button {
+                margin-top: 0px;
+            }
+
         </style>
 
         <span class="title">
@@ -177,7 +181,7 @@
                         </div>
                         <paper-checkbox style="text-align: center;" checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
                         <!-- prevents the contents from overflowing and showing the scrollbar when the checkbox is ticked -->
-                        <hr style="display:none;">
+                        <hr style="visibility: hidden;">
                     </template>
 
                 </div>
@@ -185,11 +189,11 @@
             </paper-dialog-scrollable>
 
             <template is="dom-if" if="{{editing}}">
-                <iron-icon on-click="_delete" class="icon" icon="icons:clear"></iron-icon>
+                <iron-icon on-click="_delete" class="icon-button icon" icon="icons:clear"></iron-icon>
             </template>
 
             <template is="dom-if" if="{{_saveable(editing, creating)}}">
-                <iron-icon on-click="_save" class="icon" icon="icons:check"></iron-icon>
+                <iron-icon on-click="_save" class="icon-button icon" icon="icons:check"></iron-icon>
             </template>
 
             <div class="buttons">
@@ -269,6 +273,7 @@
         _start() {
             this.editing = false;
             this.creating = false;
+            this.$.configurationLoader.generateRequest();
             this.$.queue.open();
         }
 

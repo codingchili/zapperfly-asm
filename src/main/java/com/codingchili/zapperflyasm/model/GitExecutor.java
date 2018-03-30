@@ -8,11 +8,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.logging.LogMessage;
 import com.codingchili.core.logging.Logger;
+
+import static com.codingchili.core.configuration.CoreStrings.throwableToString;
 
 /**
  * @author Robin Duda
@@ -170,8 +171,17 @@ public class GitExecutor implements VersionControlSystem {
 
     @Override
     public Future<Void> delete(BuildJob job) {
+        job.log("Cleaning build directory.. " + job.getDirectory());
         Future<Void> future = Future.future();
-        core.vertx().fileSystem().deleteRecursive(job.getDirectory(), true, future);
+
+        core.vertx().fileSystem().deleteRecursive(job.getDirectory(), true, done -> {
+            if (done.succeeded()) {
+                job.log("Cleaning completed.");
+            } else {
+                job.log("Failed to clean: " + throwableToString(done.cause()));
+                future.fail(done.cause());
+            }
+        });
         return future;
     }
 
@@ -194,7 +204,7 @@ public class GitExecutor implements VersionControlSystem {
 
     private void onError(BuildJob job, Throwable e) {
         event(job, "cloneFailed")
-                .put("error", CoreStrings.throwableToString(e))
+                .put("error", throwableToString(e))
                 .send();
     }
 
