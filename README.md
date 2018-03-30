@@ -26,10 +26,8 @@ Optional commandline arguments
 - real time log monitoring
 - downloading of build artifacts (TBD)
 - support for simple authentication (TBD)
-- 8.8x faster builds than competing product "X"! *
+- running builds (+servers) in nested docker containers (TBD)
 - tune workload per instance based on number of parallel builds.
-
-*) when building the zapperfly project.
 
 Features not implemented 😐
 - enterprise-xml-annotations-headache-complexity generator.
