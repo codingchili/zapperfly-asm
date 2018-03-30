@@ -75,7 +75,7 @@ public class BuildHandlerTest {
     public void submitBuild(TestContext test) {
         Async async = test.async();
 
-        handler.build(request((response, status) -> {
+        handler.submit(request((response, status) -> {
             test.assertEquals(ACCEPTED, status);
             async.complete();
         }, new JsonObject()

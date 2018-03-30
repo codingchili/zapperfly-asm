@@ -215,7 +215,7 @@
         </iron-ajax>
 
         <iron-ajax id="buildScheduler"
-                   url="/api/?target=builds&route=build&branch=[[branch]]&repository=[[repository]]"
+                   url="/api/?target=builds&route=submit&branch=[[branch]]&repository=[[repository]]"
                    handle-as="json" on-response="_onQueued" debounce-duration="300">
         </iron-ajax>
 

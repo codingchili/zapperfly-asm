@@ -40,7 +40,7 @@ public class BuildHandler implements CoreHandler {
 
     @Api
     @Description("Schedules a new build on the given repo and branch.")
-    public void build(ApiRequest request) {
+    public void submit(ApiRequest request) {
         context.getConfigurationManager().getConfig(request.getRepository(), request.getBranch())
                 .setHandler(done -> {
                     if (done.succeeded()) {
