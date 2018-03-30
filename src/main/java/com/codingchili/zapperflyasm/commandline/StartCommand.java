@@ -95,7 +95,7 @@ public class StartCommand implements Command {
         if (config.getInstanceName() == null) {
             config.setInstanceName(executor.getProperty(NAME)
                     .orElse(Environment.hostname()
-                            .orElse(UUID.randomUUID().toString().split("-")[0])));
+                            .orElse("zapperfly." +UUID.randomUUID().toString().split("-")[0])));
         }
     }
 

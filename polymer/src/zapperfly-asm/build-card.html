@@ -119,6 +119,10 @@
                 --paper-progress-active-color: #2196F3;
             }
 
+            paper-tooltip {
+                margin-top: -46px;
+            }
+
             .progress {
                 position: absolute;
                 bottom: 0px;
@@ -150,7 +154,7 @@
                 </template>
             </div>
 
-            <paper-tooltip for="card" position="top" animation-delay="0">
+            <paper-tooltip for="card" position="bottom" animation-delay="0">
                 {{_toLower(build.progress)}}
             </paper-tooltip>
 

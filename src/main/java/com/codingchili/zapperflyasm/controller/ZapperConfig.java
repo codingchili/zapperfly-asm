@@ -28,7 +28,7 @@ public class ZapperConfig implements Configurable {
     private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
     private String buildPath = Paths.get("").toAbsolutePath().toString();
-    private String instanceName = Environment.hostname().orElse("zapperfly." + new Random().nextInt(99));
+    private String instanceName = null;
     private String groupName = "zapperfly-builds";
     private int capacity = 2;
 
