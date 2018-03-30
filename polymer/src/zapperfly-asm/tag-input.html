@@ -19,7 +19,12 @@
                 flex-wrap: wrap;
             }
         </style>
-        <paper-input id="valueInput" label="[[label]]" on-keyup="onInput" value="{{value}}" autofocus="{{autofocus}}" always-float-label></paper-input>
+        <paper-input-container>
+            <label slot="label">{{label}}</label>
+            <iron-input slot="input" bind-value="{{value}}" on-keyup="onInput" autofocus>
+                <input>
+            </iron-input>
+        </paper-input-container>
         <div class="chip-list">
             <template is="dom-repeat" items="{{values}}" as="value">
                 <paper-chip label="{{value}}" on-click="remove"></paper-chip>

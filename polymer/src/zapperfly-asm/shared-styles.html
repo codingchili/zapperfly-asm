@@ -71,6 +71,10 @@
                 cursor: pointer;
             }
 
+            .buttons {
+                padding: 0px;
+            }
+
             iron-icon {
                 cursor: pointer;
                 color: var(--primary-color);
@@ -230,6 +234,16 @@
 
             paper-swatch-picker.color-picker {
                 --paper-swatch-picker-color-size: 20px;
+            }
+
+            input {
+                @apply --paper-input-container-shared-input-style;
+                color: var(--primary-text-color);
+                text-align: left;
+            }
+
+            paper-input-container {
+                text-align: left;
             }
         </style>
     </template>

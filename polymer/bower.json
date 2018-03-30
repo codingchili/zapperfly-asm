@@ -23,8 +23,8 @@
     "tests"
   ],
   "dependencies": {
-    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.1.0",
-    "polymer": "^2.5.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.1.1",
+    "polymer": "^2.6.0",
     "paper-button": "PolymerElements/paper-button#^2.1.0",
     "paper-spinner": "PolymerElements/paper-spinner#^2.1.0",
     "paper-card": "PolymerElements/paper-card#^2.1.0",
@@ -36,7 +36,7 @@
     "paper-progress": "PolymerElements/paper-progress#^2.1.0",
     "paper-dialog": "PolymerElements/paper-dialog#^2.1.1",
     "paper-item": "PolymerElements/paper-item#^2.1.0",
-    "paper-input": "PolymerElements/paper-input#^2.2.0",
+    "paper-input": "PolymerElements/paper-input#^2.2.1",
     "paper-checkbox": "PolymerElements/paper-checkbox#^2.0.2",
     "paper-chip": "ThomasCybulski/paper-chip#2.0.16"
   }
