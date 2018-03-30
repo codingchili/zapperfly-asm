@@ -1,7 +1,5 @@
 package com.codingchili.zapperflyasm.model;
 
-import javax.security.auth.login.Configuration;
-
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.listener.RequestWrapper;
@@ -21,6 +19,7 @@ public class ApiRequest extends RequestWrapper {
     public static final String ID_OFFSET = "offset";
     public static final String ID_LIST= "list";
     public static final String ID_TIME = "time";
+    public static final String ID_DIRECTORY = "directory";
 
     /**
      * @param request the original request to decorate.

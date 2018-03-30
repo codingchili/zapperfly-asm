@@ -73,4 +73,11 @@ public interface JobManager {
      * @return callback.
      */
     Future<Collection<LogEvent>> getLog(String buildId, Long time);
+
+    /**
+     * Removes all build history.
+     *
+     * @return callback.
+     */
+    Future<Void> clear();
 }

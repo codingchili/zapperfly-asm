@@ -15,6 +15,7 @@ import com.codingchili.core.protocol.*;
 
 import static com.codingchili.core.configuration.CoreStrings.throwableToString;
 import static com.codingchili.core.protocol.RoleMap.PUBLIC;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_DIRECTORY;
 import static com.codingchili.zapperflyasm.model.ApiRequest.ID_LIST;
 
 /**
@@ -63,6 +64,18 @@ public class BuildHandler implements CoreHandler {
     }
 
     @Api
+    @Description("Clears the build history")
+    public void clear(ApiRequest request) {
+        manager.clear().setHandler(clear -> {
+            if (clear.succeeded()) {
+                list(request);
+            } else {
+                request.error(clear.cause());
+            }
+        });
+    }
+
+    @Api
     @Description("Retrieves the build log for the running build with the given line offset.")
     public void log(ApiRequest request) {
         manager.getLog(request.getBuildId(), request.getLogOffset()).setHandler(request::result);
@@ -82,6 +95,7 @@ public class BuildHandler implements CoreHandler {
                 request.write(new JsonObject().put(ID_LIST,
                         done.result().stream()
                                 .map(Serializer::json)
+                                .peek(json -> json.remove(ID_DIRECTORY))
                                 .collect(Collectors.toList()))
                 );
             } else {

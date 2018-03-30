@@ -84,7 +84,7 @@
             </template>
 
             <template is="dom-if" if="[[started]]">
-                <iron-icon on-click="clear" class="history icon" icon="icons:clear"></iron-icon>
+                <iron-icon on-click="_clear" class="history icon" icon="icons:clear"></iron-icon>
             </template>
         </h4>
 
@@ -121,6 +121,10 @@
                    on-response="_onBuildLog" debounce-duration="300">
         </iron-ajax>
 
+        <iron-ajax id="clearBuilds" url="/api/?target=builds&route=clear"
+                   handle-as="json" on-response="_onClear" debounce-duration="300">
+        </iron-ajax>
+
     </template>
 </dom-module>
 <script>
@@ -149,6 +153,9 @@
             }, this.LOG_POLL);
         }
 
+        _onClear(event, request) {
+            this.builds = request.response.list;
+        }
 
         setBuilds(builds) {
             this.started = true;
@@ -216,6 +223,10 @@
             setTimeout(() => {
                 this.$.terminal.$.scrollable.scrollTop = Number.MAX_SAFE_INTEGER;
             }, 1);
+        }
+
+        _clear() {
+            this.$.clearBuilds.generateRequest();
         }
 
         _reload() {

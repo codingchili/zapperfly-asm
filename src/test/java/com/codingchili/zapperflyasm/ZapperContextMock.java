@@ -1,5 +1,6 @@
 package com.codingchili.zapperflyasm;
 
+import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.SystemContext;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.codingchili.zapperflyasm.controller.ZapperContext;
@@ -39,6 +40,7 @@ public class ZapperContextMock extends ZapperContext {
         config.setStorage(JsonMap.class.getName());
         config.setBuildPath("test/resources/");
         config.setTimeoutSeconds(3);
+        config.setInstanceName(Environment.hostname().orElse("zap.instance.1"));
 
         mock.configs = getMap(BuildConfiguration.class);
         mock.jobs = getMap(BuildJob.class);

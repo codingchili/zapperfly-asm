@@ -89,7 +89,10 @@
             }
 
             paper-checkbox {
-                margin-top: 8px;
+                margin: 0;
+                padding-bottom: 14px;
+                padding-top: 14px;
+                box-sizing: border-box;
             }
 
             .dialog-content {
@@ -172,7 +175,9 @@
 
                             <tag-input label="output directories" value="{{tagtext}}" values="{{config.outputDirs}}"></tag-input>
                         </div>
-                        <paper-checkbox checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
+                        <paper-checkbox style="text-align: center;" checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
+                        <!-- prevents the contents from overflowing and showing the scrollbar when the checkbox is ticked -->
+                        <hr style="display:none;">
                     </template>
 
                 </div>

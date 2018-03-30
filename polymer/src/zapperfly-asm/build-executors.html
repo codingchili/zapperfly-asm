@@ -124,6 +124,13 @@
                 opacity: var(--opacity);
             }
 
+            .last-seen {
+                margin-top: 16px;
+                text-align: center;
+                font-size: 0.8em;
+                opacity: var(--opacity);
+            }
+
         </style>
 
         <div class="container">
@@ -147,6 +154,9 @@
                     <template is="dom-if" if="[[!executor.online]]">
                         <div class="status offline">
                             offline
+                        </div>
+                        <div class="last-seen">
+                            Last seen {{_toDate(executor.updated)}}
                         </div>
                     </template>
                     <template is="dom-if" if="[[executor.online]]">
@@ -197,6 +207,10 @@
             setInterval(() => {
                 this.$.executorsLoader.generateRequest();
             }, 3000);
+        }
+
+        _toDate(epochMS) {
+            return new Date(epochMS).toLocaleString();
         }
 
         _toPercent(value) {

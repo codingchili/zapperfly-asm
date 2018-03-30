@@ -1,11 +1,12 @@
 package com.codingchili.zapperflyasm.model;
 
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
-import io.vertx.core.AsyncResult;
+import io.vertx.core.*;
 import io.vertx.core.Future;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.codingchili.core.context.CoreContext;
@@ -15,6 +16,7 @@ import com.codingchili.core.storage.*;
 
 import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 import static com.codingchili.zapperflyasm.model.BuildJob.START;
+import static com.codingchili.zapperflyasm.model.Status.*;
 
 /**
  * @author Robin Duda
@@ -209,7 +211,7 @@ public class DefaultJobManager implements JobManager {
                 .execute(query -> {
                     if (query.succeeded()) {
                         query.result().forEach(job -> {
-                            job.setProgress(Status.FAILED);
+                            job.setProgress(FAILED);
                             log(job, String.format("'%s' has gone offline - build failed.", job.getInstance()));
                             save(job);
                         });
@@ -268,6 +270,50 @@ public class DefaultJobManager implements JobManager {
                         .map(event -> event.setBuild(null).setId(null)).collect(Collectors.toList()));
             } else {
                 logger.onError(done.cause());
+                future.fail(done.cause());
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public Future<Void> clear() {
+        Future<Void> future = Future.future();
+
+        Future<Void> clearLog = Future.future();
+        logs.clear(clearLog);
+
+        Future<Void> clearBuilds = Future.future();
+        jobs.query(PROGRESS).in(FAILED, DONE, CANCELLED).execute(query -> {
+            if (query.succeeded()) {
+                AtomicInteger count = new AtomicInteger(query.result().size());
+
+                // nothing to remove - make sure to complete.
+                if (count.get() == 0) {
+                    clearBuilds.complete();
+                }
+
+                // try and remove all query results.
+                query.result().forEach(job -> {
+                    jobs.remove(job.getId(), (removed) -> {
+                        if (removed.failed()) {
+                            clearBuilds.tryFail(removed.cause());
+                        } else {
+                            if (count.decrementAndGet() == 0) {
+                                clearBuilds.complete();
+                            }
+                        }
+                    });
+                });
+            } else {
+                clearBuilds.fail(query.cause());
+            }
+        });
+
+        CompositeFuture.all(clearLog, clearBuilds).setHandler(done -> {
+            if (done.succeeded()) {
+                future.complete();
+            } else {
                 future.fail(done.cause());
             }
         });

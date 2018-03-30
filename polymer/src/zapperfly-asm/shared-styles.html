@@ -8,13 +8,13 @@
             * {
                 --opacity: 0.45;
                 --primary-text-color: var(--dark-theme-text-color);
-                --primary-background-color: #3E2723;
+                --primary-background-color: var(--paper-grey-900);
                 --secondary-text-color: var(--dark-theme-secondary-color);
                 --disabled-text-color: var(--dark-theme-disabled-color);
                 --divider-color: var(--dark-theme-divider-color);
                 --error-color: var(--paper-deep-orange-a700);
-                --primary-color: #2196F3;
-                --secondary-color: var(--paper-indigo-300);
+                --primary-color: var(--paper-cyan-a700);
+                --secondary-color: var(--paper-deep-orange-a700);
                 --paper-progress-container-color: var(--primary-background-color);
                 --faint-text-color: {
                     --primary-text-color: var(--light-theme-text-color);
@@ -202,13 +202,13 @@
 
             @media screen and (max-width: 518px) {
                 paper-dialog {
-                    top: -64px;
+                    top: 0;
                     height: auto;
                     left: 0;
                     right: 0;
                     margin: 0;
                     padding: 0;
-                    position:absolute;
+                    position: fixed !important;
                     --dialog-min-width: 100%;
                 }
 
