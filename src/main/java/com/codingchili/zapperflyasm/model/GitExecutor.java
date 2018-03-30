@@ -1,10 +1,13 @@
 package com.codingchili.zapperflyasm.model;
 
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
-import io.vertx.core.*;
-
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -12,8 +15,12 @@ import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.logging.LogMessage;
 import com.codingchili.core.logging.Logger;
-
+import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import static com.codingchili.core.configuration.CoreStrings.throwableToString;
+
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.WorkerExecutor;
 
 /**
  * @author Robin Duda
@@ -174,15 +181,23 @@ public class GitExecutor implements VersionControlSystem {
         job.log("Cleaning build directory.. " + job.getDirectory());
         Future<Void> future = Future.future();
 
-        core.vertx().fileSystem().deleteRecursive(job.getDirectory(), true, done -> {
-            if (done.succeeded()) {
+        core.blocking(blocking -> {
+            try {
+                Files.walk(Paths.get(job.getDirectory()))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .peek(file -> file.setWritable(true))
+                    .forEach(File::delete);
+
                 job.log("Cleaning completed.");
-                future.complete();
-            } else {
-                job.log("Failed to clean: " + throwableToString(done.cause()));
-                future.fail(done.cause());
+                blocking.complete();
+
+            } catch (IOException e) {
+                job.log("Failed to clean: " + throwableToString(e));
+                blocking.fail(e);
             }
-        });
+        }, future);
+
         return future;
     }
 

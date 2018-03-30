@@ -1,10 +1,12 @@
 package com.codingchili.zapperflyasm.commandline;
 
-import io.vertx.core.Future;
-
-import com.codingchili.core.context.*;
+import com.codingchili.core.context.Command;
+import com.codingchili.core.context.CommandExecutor;
+import com.codingchili.core.context.CommandResult;
 import com.codingchili.core.logging.ConsoleLogger;
 import com.codingchili.core.logging.Logger;
+
+import io.vertx.core.Future;
 
 /**
  * @author Robin Duda
