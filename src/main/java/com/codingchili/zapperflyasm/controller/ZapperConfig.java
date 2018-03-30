@@ -4,10 +4,10 @@ import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.Future;
 
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import com.codingchili.core.configuration.Configurable;
+import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.files.Configurations;
 import com.codingchili.core.storage.*;
@@ -22,17 +22,25 @@ import com.codingchili.core.storage.*;
  * but can go offline without interrupting any services.
  */
 public class ZapperConfig implements Configurable {
-    public static String PATH = "config.yaml";
+    private static String PATH = "config.yaml";
     private static ZapperConfig config = null;
     private Map<String, User> users = new HashMap<>();
     private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
     private String buildPath = Paths.get("").toAbsolutePath().toString();
-    private String groupName = null;
+    private String instanceName = Environment.hostname().orElse("zapperfly." + new Random().nextInt(99));
+    private String groupName = "zapperfly-builds";
     private int capacity = 2;
-    private String instanceName;
 
 
+    /**
+     * Retrieves a storage implementation used to host objects of the given class.
+     *
+     * @param core  the core context to create the storage on.
+     * @param value the class of the value to be stored.
+     * @param <T>   the type of the value to be stored.
+     * @return callback.
+     */
     public static <T extends Storable> Future<AsyncStorage<T>> getStorage(CoreContext core,
                                                                           Class<T> value) {
         Future<AsyncStorage<T>> future = Future.future();

@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import com.codingchili.core.storage.Storable;
 
-import static com.codingchili.zapperflyasm.model.BuildRequest.ID_TIME;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_TIME;
 
 /**
  * @author Robin Duda

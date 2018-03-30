@@ -10,13 +10,13 @@ import java.util.*;
 
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.*;
-import com.codingchili.core.listener.BusRouter;
+import com.codingchili.core.listener.MultiHandler;
 
 import static com.codingchili.core.files.Configurations.system;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Command for starting the application and parsing some commandline options.
  */
 public class StartCommand implements Command {
@@ -44,25 +44,42 @@ public class StartCommand implements Command {
         system().setOptions(options);
 
         SystemContext.clustered(clustered -> {
-            CoreContext core = clustered.result();
-            List<Future> deployments = new ArrayList<>();
-
-            if (executor.hasProperty(WEBSITE)) {
-                deployments.add(core.listener(() -> new Webserver(
-                        Integer.parseInt(executor.getProperty(WEBSITE)
-                                .orElse(DEFAULT_PORT)))
-                        .handler(new BusRouter())));
+            if (clustered.succeeded()) {
+                ZapperContext.get(clustered.result()).setHandler(done -> {
+                    if (done.succeeded()) {
+                        startup(start, executor, done.result());
+                    } else {
+                        start.fail(done.cause());
+                    }
+                });
+            } else {
+                start.fail(clustered.cause());
             }
-            deployments.add(core.handler(BuildHandler::new));
+        });
+    }
 
-            CompositeFuture.all(deployments).setHandler(deploy -> {
-                if (deploy.succeeded()) {
-                    start.complete(CommandResult.STARTED);
-                } else {
-                    start.fail(deploy.cause());
-                    core.close();
-                }
-            });
+    private void startup(Future<CommandResult> start, CommandExecutor executor, ZapperContext context) {
+        List<Future> deployments = new ArrayList<>();
+        MultiHandler api = new MultiHandler(
+                new BuildHandler(),
+                new ConfigurationHandler());
+
+        if (executor.hasProperty(WEBSITE)) {
+            deployments.add(context.listener(() -> new Webserver(
+                    Integer.parseInt(executor.getProperty(WEBSITE)
+                            .orElse(DEFAULT_PORT)))
+                    .handler(api)));
+        } else {
+            deployments.add(context.handler(() -> api));
+        }
+
+        CompositeFuture.all(deployments).setHandler(deploy -> {
+            if (deploy.succeeded()) {
+                start.complete(CommandResult.STARTED);
+            } else {
+                start.fail(deploy.cause());
+                context.close();
+            }
         });
     }
 
@@ -98,5 +115,11 @@ public class StartCommand implements Command {
     @Override
     public String toString() {
         return getDescription();
+    }
+
+    public static void main(String[] args) {
+        while (true) {
+            // lol.
+        }
     }
 }

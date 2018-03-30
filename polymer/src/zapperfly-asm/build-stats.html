@@ -45,6 +45,21 @@
             paper-item {
                 cursor: pointer;
             }
+
+            #config {
+                text-align: left;
+                width: 100%;
+            }
+
+            #config td, #config th {
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                padding: 8px;
+            }
+
+            th {
+                color: var(--primary-color);
+            }
+
         </style>
 
         <paper-card elevation="1">
@@ -64,6 +79,8 @@
             <h2>About</h2>
             <paper-dialog-scrollable>
 
+                <a target="_blank" href="https://github.com/codingchili/zapperfly-asm"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+
                 <p>Zapperfly-asm is a clustered build server with minimal setup!</p>
 
                 <p>Zapperfly is developed by Robin Duda, find the source code and more of my projects on
@@ -78,8 +95,34 @@
             <h2>Configuration</h2>
             <paper-dialog-scrollable>
 
-                cluster-wide settings.
+                <span style="opacity:0.45">cluster-wide settings.</span>
 
+                <table id="config">
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Cluster group</td>
+                        <td>[[config.groupName]]</td>
+                    </tr>
+                    <tr>
+                        <td>Webserver host</td>
+                        <td>[[config.instanceName]]</td>
+                    </tr>
+                    <tr>
+                        <td>Build timeout</td>
+                        <td>[[config.timeoutSeconds]] seconds.</td>
+                    </tr>
+                    <tr>
+                        <td>Build path</td>
+                        <td>[[config.buildPath]]</td>
+                    </tr>
+                    <tr>
+                        <td>Storage plugin</td>
+                        <td>[[config.storage]]</td>
+                    </tr>
+                </table>
             </paper-dialog-scrollable>
             <div class="buttons">
                 <paper-button raised dialog-dismiss>Close</paper-button>
@@ -88,6 +131,10 @@
 
         <iron-ajax auto id="jokeLoader" url="https://api.icndb.com/jokes/random?limitTo=[nerdy]" handle-as="json"
                    on-response="_onJokes" debounce-duration="300">
+        </iron-ajax>
+
+        <iron-ajax id="configLoader" url="/api/?target=config&route=cluster" handle-as="json"
+                   on-response="_onConfig" debounce-duration="300">
         </iron-ajax>
 
     </template>
@@ -117,6 +164,7 @@
         }
 
         _configure() {
+            this.$.configLoader.generateRequest();
             this.$.configure.open();
         }
 
@@ -127,8 +175,16 @@
         _onJokes(event, request) {
             this.joke = request.response.value.joke;
         }
+
+        _onConfig(event, request) {
+            this.config = request.response;
+        }
     }
     window.customElements.define(BuildStats.is, BuildStats);
+
+
+
+
 
 
 

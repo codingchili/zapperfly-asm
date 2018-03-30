@@ -13,7 +13,7 @@ public class NotConfiguredException extends CoreException {
     /**
      * @param request the request that cause the exception.
      */
-    public NotConfiguredException(BuildRequest request) {
+    public NotConfiguredException(ApiRequest request) {
         super("No configuration exists for repo " + request.getRepository() +
                 " and branch " + request.getBranch());
     }

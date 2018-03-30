@@ -1,9 +1,7 @@
 package com.codingchili.zapperflyasm;
 
 import com.codingchili.zapperflyasm.controller.BuildHandler;
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.codingchili.zapperflyasm.model.*;
-import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -16,16 +14,12 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import com.codingchili.core.context.*;
-import com.codingchili.core.protocol.Serializer;
-import com.codingchili.core.storage.AsyncStorage;
-import com.codingchili.core.storage.JsonMap;
 import com.codingchili.core.testing.RequestMock;
 import com.codingchili.core.testing.ResponseListener;
 
 import static com.codingchili.core.configuration.CoreStrings.ID_COLLECTION;
 import static com.codingchili.core.protocol.ResponseStatus.*;
-import static com.codingchili.zapperflyasm.model.BuildRequest.*;
+import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 
 /**
  * @author Robin Duda
@@ -36,47 +30,31 @@ import static com.codingchili.zapperflyasm.model.BuildRequest.*;
 public class BuildHandlerTest {
     private static final String BRANCH = "branch";
     private static final String REPOSITORY = "repository";
-    public static final String TEST_ID = "TEST";
-    public static final String TEST_DIR = "test_dir";
+    private static final String TEST_ID = "TEST";
+    private static final String TEST_DIR = "test_dir";
     private BuildHandler handler = new BuildHandler();
-    private ZapperConfig config = ZapperConfig.get();
-    private AsyncStorage<BuildConfiguration> configs;
-    private AsyncStorage<BuildJob> jobs;
-    private AsyncStorage<LogEvent> logs;
-    private CoreContext core;
+    private ZapperContextMock context;
 
     @Before
     public void setup(TestContext test) {
         Async async = test.async();
-        core = new SystemContext();
-        config.setBuildPath("test/resources/");
-        config.setTimeoutSeconds(5);
-        handler.init(core);
 
-        ZapperConfig.get().setStorage(JsonMap.class.getName());
+        ZapperContextMock.create().setHandler(create -> {
+            context = create.result();
+            handler.init(context);
 
-        configs = new JsonMap<>(Future.future(), new StorageContextMock<>(BuildConfiguration.class));
-        jobs = new JsonMap<>(Future.future(), new StorageContextMock<>(BuildJob.class));
-        logs = new JsonMap<>(Future.future(), new StorageContextMock<>(LogEvent.class));
+            context.addConfig(new BuildConfiguration(REPOSITORY, BRANCH));
+            context.log(new LogEvent().setBuild(TEST_ID));
+            context.addJob(getTestBuild());
 
-        ClusteredJobManager manager = new ClusteredJobManager(core, this.jobs, logs, this.configs);
-        manager.setVCSProvider(new VCSMock(core));
-        manager.setBuildExecutor(new BuildExecutorMock(true));
-
-        BuildConfiguration build = new BuildConfiguration();
-        build.setRepository(REPOSITORY);
-        build.setBranch(BRANCH);
-        manager.putConfig(build);
-
-        logs.put(new LogEvent().setBuild(TEST_ID), (done) -> {});
-
-        handler.setManager(manager);
-
-        this.jobs.put(getTestBuild(), (done) -> async.complete());
+            async.complete();
+        });
     }
 
     private BuildJob getTestBuild() {
-        BuildJob job = new BuildJob(new BuildConfiguration(), (j) -> {}, (j, l) -> {});
+        BuildJob job = new BuildJob(new BuildConfiguration(REPOSITORY, BRANCH), (j) -> {
+        }, (j, l) -> {
+        });
         job.setId(TEST_ID);
         job.setCommit("commit");
         job.setDirectory(TEST_DIR);
@@ -90,7 +68,7 @@ public class BuildHandlerTest {
 
     @After
     public void tearDown(TestContext test) {
-        core.close(test.asyncAssertSuccess());
+        context.close(test.asyncAssertSuccess());
     }
 
     @Test
@@ -176,53 +154,27 @@ public class BuildHandlerTest {
         config.setRepository("repo");
         config.setBranch("mybranch");
 
-        configs.put(config, (done) -> {
-            handler.artifacts(request((response, status) -> {
-                test.assertEquals(ACCEPTED, status);
-                async.complete();
-            }, new JsonObject()
-                    .put(ID_BUILD, TEST_ID)));
-        });
-    }
+        context.addConfig(config);
 
-    @Test
-    public void configureBuild(TestContext test) {
-        Async async = test.async();
-
-        BuildConfiguration config = new BuildConfiguration();
-        config.setRepository("repo_test");
-        config.setBranch("br_test");
-
-        // and now attempt to remove the configured build.
-        Runnable unconfigure = () -> {
-            handler.unconfigure(request((response, status) -> {
-                test.assertEquals(ACCEPTED, status);
-                async.complete();
-            }, new JsonObject()
-                    .put(ID_REPO, config.getRepository())
-                    .put(ID_BRANCH, config.getBranch())));
-        };
-
-        // configure the build.
-        handler.configure(request((response, status) -> {
+        handler.artifacts(request((response, status) -> {
             test.assertEquals(ACCEPTED, status);
-            unconfigure.run();
+            async.complete();
         }, new JsonObject()
-                .put(ID_CONFIG, Serializer.json(config))));
+                .put(ID_BUILD, TEST_ID)));
     }
 
     @Test
-    public void listConfigurations(TestContext test) {
+    public void listInstances(TestContext test) {
         Async async = test.async();
 
-        handler.configurations(request((response, status) -> {
-            test.assertTrue(response.getJsonArray(ID_COLLECTION).size() > 0);
+        handler.instances(request((response, status) -> {
             test.assertEquals(ACCEPTED, status);
+            test.assertFalse(response.getJsonArray("collection").isEmpty());
             async.complete();
         }, new JsonObject()));
     }
 
-    private BuildRequest request(ResponseListener response, JsonObject data) {
-        return new BuildRequest(RequestMock.get("n/a", response, data));
+    private ApiRequest request(ResponseListener response, JsonObject data) {
+        return new ApiRequest(RequestMock.get("n/a", response, data));
     }
 }

@@ -5,10 +5,8 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import com.codingchili.core.configuration.Environment;
+import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.storage.Storable;
-
-import static com.codingchili.zapperflyasm.model.BuildRequest.ID_TIME;
 
 /**
  * @author Robin Duda
@@ -20,10 +18,10 @@ public class BuildJob implements Storable {
     private transient Consumer<BuildJob> saver;
     private transient BiConsumer<BuildJob, String> logger;
     private BuildConfiguration config;
-    private Long start = ZonedDateTime.now().toInstant().toEpochMilli();
+    private Long start = System.currentTimeMillis();
     private Long end = 0L;
     private String id = UUID.randomUUID().toString();
-    private String instance = Environment.hostname().orElseGet(() -> UUID.randomUUID().toString());
+    private String instance;
     private String message;
     private String commit;
     private Status progress = Status.QUEUED;
@@ -45,8 +43,8 @@ public class BuildJob implements Storable {
     }
 
     @Override
-    protected Object clone() throws CloneNotSupportedException {
-        throw new RuntimeException("not really supported.");
+    protected Object clone() {
+        throw new CoreRuntimeException("not really supported.");
     }
 
     /**

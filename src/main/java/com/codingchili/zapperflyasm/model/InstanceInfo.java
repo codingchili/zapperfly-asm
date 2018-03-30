@@ -1,7 +1,9 @@
 package com.codingchili.zapperflyasm.model;
 
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
+import com.sun.management.OperatingSystemMXBean;
 
+import java.lang.management.ManagementFactory;
 import java.util.UUID;
 
 import com.codingchili.core.configuration.Environment;
@@ -15,6 +17,8 @@ import com.codingchili.core.storage.Storable;
 public class InstanceInfo implements Storable {
     private String instance;
     private boolean online = true;
+    private double cpu = 0.0;
+    private double mem = 0.0;
     private int builds = 0;
     private int capacity;
     private long updated;
@@ -25,15 +29,8 @@ public class InstanceInfo implements Storable {
         capacity = config.getCapacity();
     }
 
-    /**
-     * @return the name of the instance.
-     */
-    public String getInstance() {
-        return instance;
-    }
-
-    public InstanceInfo setInstance(String instance) {
-        this.instance = instance;
+    public InstanceInfo setId(String id) {
+        this.instance = id;
         return this;
     }
 
@@ -86,8 +83,44 @@ public class InstanceInfo implements Storable {
         this.updated = updated;
     }
 
+    /**
+     * @return the cpu load in percent.
+     */
+    public double getCpu() {
+        return cpu;
+    }
+
+    public void setCpu(double cpu) {
+        this.cpu = cpu;
+    }
+
+    /**
+     * @return memory utilization in percent.
+     */
+    public double getMem() {
+        return mem;
+    }
+
+    public void setMem(double mem) {
+        this.mem = mem;
+    }
+
     @Override
     public String getId() {
         return instance;
+    }
+
+    public void calculateSystemLoad() {
+        cpu = getMXBean().getSystemCpuLoad();
+        mem = 1.0 - ((getMXBean().getFreePhysicalMemorySize() * 1.0) / getMXBean().getTotalPhysicalMemorySize());
+    }
+
+    private static OperatingSystemMXBean mxBean = null;
+    private OperatingSystemMXBean  getMXBean() {
+        if (mxBean == null) {
+            mxBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory
+                    .getOperatingSystemMXBean();
+        }
+        return mxBean;
     }
 }
