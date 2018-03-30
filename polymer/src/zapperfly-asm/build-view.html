@@ -15,7 +15,6 @@
                 width: 40%;
                 height: 100%;
                 text-align: center;
-                min-height: 326px;
                 padding-bottom: 32px;
             }
 
@@ -69,7 +68,11 @@
           }
 
           hr {
-            opacity: 0.35;
+            opacity: var(--opacity);
+          }
+
+          .empty {
+            opacity: var(--opacity);
           }
         </style>
 
@@ -89,6 +92,10 @@
             <template is="dom-if" if="{{_show(build)}}">
                 <build-card on-click="_onClick" build="[[build]]"></build-card>
             </template>
+        </template>
+
+        <template is="dom-if" if="{{_isEmpty(builds)}}">
+            <span class="empty">empty</span>
         </template>
 
         <paper-dialog id="logDialog" with-backdrop modal>
@@ -132,6 +139,7 @@
             this.LOG_POLL = 2500;
             this.started = false;
             this.build = null;
+            this.builds = [];
             this.log = [];
 
             setInterval(() => {
@@ -141,13 +149,23 @@
             }, this.LOG_POLL);
         }
 
+
         setBuilds(builds) {
-            if (builds.length > 0) {
-                this.started = true;
-            } else {
-                this.started = false;
-            }
+            this.started = true;
             this.builds = builds;
+
+            // update the build information after opening the log.
+            if (this.build != null) {
+                for (let i in builds) {
+                    if (builds[i].id == this.build.id) {
+                        this.build = builds[i];
+                    }
+                }
+            }
+        }
+
+        _isEmpty() {
+            return this.builds.length == 0;
         }
 
         _onClick(e) {

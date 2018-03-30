@@ -12,7 +12,7 @@ import com.codingchili.core.protocol.Serializer;
  * <p>
  * Maps requests to ease retrieval of attributes in the API.
  */
-public class BuildRequest extends RequestWrapper {
+public class ApiRequest extends RequestWrapper {
     public static final String ID_BUILD = "id";
     public static final String ID_CONFIG = "config";
     public static final String ID_REPO = "repository";
@@ -25,7 +25,7 @@ public class BuildRequest extends RequestWrapper {
     /**
      * @param request the original request to decorate.
      */
-    public BuildRequest(Request request) {
+    public ApiRequest(Request request) {
         super(request);
     }
 

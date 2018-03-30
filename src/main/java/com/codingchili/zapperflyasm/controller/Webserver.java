@@ -56,8 +56,10 @@ public class Webserver implements CoreListener {
         Router router = Router.router(core.vertx());
         router.route().handler(BodyHandler.create());
 
+
+        RequestProcessor processor = new RequestProcessor(core, handler);
         router.route("/api/*").handler(route -> {
-           handler.handle(new RestRequest(route, settings));
+           processor.submit(() -> new RestRequest(route, settings));
         });
 
         router.route("/*").handler(StaticHandler.create()

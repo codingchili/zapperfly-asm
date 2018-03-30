@@ -35,7 +35,6 @@
            }
 
             .build {
-                color: var(--primary-color);
                 cursor: pointer;
                 margin-left: 10px;
                 position: absolute;
@@ -99,6 +98,10 @@
             .new {
                 margin-top: 12px;
                 display: block;
+            }
+
+            .empty {
+                opacity: var(--opacity);
             }
 
         </style>
@@ -172,7 +175,11 @@
             </template>
         </template>
 
-        <iron-ajax auto id="configurationLoader" url="/api/?target=builds&route=configurations"
+        <template is="dom-if" if="{{_isEmpty(builds)}}">
+            <span class="empty">empty</span>
+        </template>
+
+        <iron-ajax auto id="configurationLoader" url="/api/?target=config&route=list"
                    handle-as="json"
                    on-response="_onConfiguration" debounce-duration="300">
         </iron-ajax>
@@ -187,7 +194,7 @@
         </iron-ajax>
 
         <iron-ajax id="deleteConfig"
-                   url="/api/?target=builds&route=unconfigure&branch=[[branch]]&repository=[[repository]]"
+                   url="/api/?target=config&route=remove&branch=[[branch]]&repository=[[repository]]"
                    handle-as="json" on-response="_onDelete" debounce-duration="300">
         </iron-ajax>
     </template>
@@ -201,7 +208,7 @@
 
         constructor() {
             super();
-            this.config = {};
+            this.builds = [];
             this.started = false;
             this.editing = false;
             this.creating = false;
@@ -218,6 +225,15 @@
 
         _saveable(editing, creating) {
             return (editing | creating);
+        }
+
+        _isEmpty() {
+            for (let i in this.builds) {
+                if (this._show(this.builds[i])) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         _start() {
@@ -252,14 +268,14 @@
         }
 
         _save() {
-            let json = JSON.stringify({'config': this.config, 'route': 'configure', 'target': 'builds'});
+            let json = JSON.stringify({'config': this.config, 'route': 'add', 'target': 'config'});
             this.$.updateConfig.body = json;
             this.$.updateConfig.generateRequest();
         }
 
         _new() {
             this.creating = true;
-            this.config = {};
+            this.config = {'outputDirs': []};
         }
 
         _trimRepo(string) {

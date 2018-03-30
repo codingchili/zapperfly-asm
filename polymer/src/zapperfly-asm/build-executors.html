@@ -1,5 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="shared-styles.html">
 
@@ -21,11 +22,17 @@
 
             .executor {
                 margin-bottom: 4px;
-                display: flex;
                 margin-left: 6px;
                 margin-right: 6px;
                 cursor: pointer;
-                flex-flow: column;
+                min-height: 76px;
+            }
+
+            @media screen and (max-width: 576px) {
+                .executor {
+                    display: flex;
+                    flex-flow: column;
+                }
             }
 
             .executor:hover {
@@ -54,30 +61,67 @@
                 opacity: 0.85;
             }
 
-            .builds {
-                margin-top: 8px;
-                margin-left: 16px;
-                font-size: 0.65em;
-                opacity: 0.85;
-            }
-
-            .capacity {
-                margin-top: 8px;
-                margin-left: 16px;
-                font-size: 0.65em;
-                opacity: 0.85;
-                padding-bottom: 12px;
-            }
-
             .items {
                 width: 100%;
-                display: block;
+                display: flex;
+                flex-direction: column;
             }
 
             #spinner {
                 display: block;
                 margin: auto;
                 margin-top: 12px;
+            }
+
+            paper-progress {
+                --paper-progress-transition-duration: 4s;
+                --paper-progress-transition-timing-function: ease;
+                --paper-progress-transition-delay: 0s;
+                --paper-progress-container-color: rgba(255, 255, 255, 0.12);
+            }
+
+            .cpu {
+                position: absolute;
+                left: 16px;
+                right: 16px;
+                width: auto;
+                top: 42px;
+            }
+
+            .mem {
+                position: absolute;
+                left: 16px;
+                right: 16px;
+                width: auto;
+                top: 64px;
+            }
+
+            .cpu-text {
+                margin-left: 16px;
+                font-size: 0.65em;
+                opacity: var(--opacity);
+            }
+
+            .mem-text {
+                margin-top: 10px;
+                margin-left: 16px;
+                font-size: 0.65em;
+                opacity: var(--opacity);
+                padding-bottom: 12px;
+            }
+
+            .info {
+                margin-top: 4px;
+            }
+
+            .executing {
+                text-align: center;
+                position: absolute;
+                top: 4px;
+                left: 0px;
+                right: 0px;
+                font-size: 0.8em;
+                opacity: var(--opacity);
             }
 
         </style>
@@ -97,8 +141,9 @@
             <template is="dom-repeat" items="{{executors}}" as="executor">
                 <paper-card class="executor" elevation="1">
                     <div class="instance">
-                        [[executor.instance]]
+                        [[executor.id]]
                     </div>
+
                     <template is="dom-if" if="[[!executor.online]]">
                         <div class="status offline">
                             offline
@@ -108,13 +153,25 @@
                         <div class="status online">
                             online
                         </div>
+
+                        <div class="info">
+
+                            <div class="executing">
+                                [[executor.builds]]/[[executor.capacity]]
+                            </div>
+
+                            <paper-progress class="cpu transiting"
+                                            value="{{_toPercent(executor.cpu)}}"></paper-progress>
+                            <paper-progress class="mem transiting"
+                                            value="{{_toPercent(executor.mem)}}"></paper-progress>
+                            <div class="cpu-text">
+                                CPU {{_toPercent(executor.cpu)}}%
+                            </div>
+                            <div class="mem-text">
+                                MEM {{_toPercent(executor.mem)}}%
+                            </div>
+                        </div>
                     </template>
-                    <div class="builds">
-                        Executing: [[executor.builds]] <br>
-                    </div>
-                    <div class="capacity">
-                        Capacity: [[executor.capacity]]
-                    </div>
                 </paper-card>
             </template>
         </div>
@@ -139,7 +196,11 @@
 
             setInterval(() => {
                 this.$.executorsLoader.generateRequest();
-            }, 5000);
+            }, 3000);
+        }
+
+        _toPercent(value) {
+            return Math.trunc(value * 100);
         }
 
         _onExecutors(event, request) {
@@ -153,7 +214,4 @@
         }
     }
     window.customElements.define(BuildExecutors.is, BuildExecutors);
-
-
-
 </script>

@@ -17,6 +17,17 @@ public class BuildConfiguration implements Storable {
     private String branch;
     private String cmdLine;
 
+    public BuildConfiguration() {}
+
+    /**
+     * @param repository the repository the configuration applies to.
+     * @param branch the branch the configuration applies to.
+     */
+    public BuildConfiguration(String repository, String branch) {
+        this.repository = repository;
+        this.branch = branch;
+    }
+
     /**
      * @return the repository for which the configuration applies.
      */

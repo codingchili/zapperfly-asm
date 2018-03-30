@@ -4,8 +4,8 @@ import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import com.codingchili.core.context.CoreContext;
@@ -13,61 +13,75 @@ import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.logging.Logger;
 import com.codingchili.core.storage.*;
 
+import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 import static com.codingchili.zapperflyasm.model.BuildJob.START;
-import static com.codingchili.zapperflyasm.model.BuildRequest.*;
 
 /**
  * @author Robin Duda
  * <p>
  * Manages jobs - distributes across the cluster.
  */
-public class ClusteredJobManager implements JobManager {
+public class DefaultJobManager implements JobManager {
+    private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
+    private static final int INSTANCE_TIMEOUT = 4000;
     private static final String BUILD = "build";
     private static final String PROGRESS = "progress";
-    private static final String LINE = "line";
-    private AsyncStorage<BuildConfiguration> configs;
+    private static final String INSTANCE = "instance";
     private AsyncStorage<BuildJob> jobs;
     private AsyncStorage<LogEvent> logs;
     private AsyncStorage<InstanceInfo> instances;
     private VersionControlSystem vcs;
+    private ZapperConfig config = ZapperConfig.get();
     private InstanceInfo instance = new InstanceInfo();
     private BuildExecutor executor;
     private Logger logger;
+    private CoreContext core;
 
     /**
      * Creates a new clustered job manager.
      *
-     * @param core    the core on which the manager is to be run.
-     * @param jobs    a potentially clustered store of jobs to execute.
-     * @param logs    a potentially clulstered store to store job logs.
-     * @param configs a potentially clustered store of build configuration.
+     * @param core the core on which the manager is to be run.
+     * @param jobs a potentially clustered store of jobs to execute.
+     * @param logs a potentially clulstered store to store job logs.
      */
-    public ClusteredJobManager(CoreContext core,
-                               AsyncStorage<BuildJob> jobs,
-                               AsyncStorage<LogEvent> logs,
-                               AsyncStorage<BuildConfiguration> configs) {
+    public DefaultJobManager(CoreContext core,
+                             AsyncStorage<BuildJob> jobs,
+                             AsyncStorage<LogEvent> logs,
+                             AsyncStorage<InstanceInfo> instances) {
 
         this.vcs = new GitExecutor(core);
         this.executor = new ProcessBuilderExecutor(core);
         this.jobs = jobs;
-        this.configs = configs;
         this.logs = logs;
+        this.core = core;
         this.logger = core.logger(getClass());
+        this.instances = instances;
 
-        ZapperConfig.getStorage(core, InstanceInfo.class).setHandler(done -> {
-            if (done.succeeded()) {
-                this.instances = done.result();
-                save();
-            } else {
-                logger.onError(done.cause());
-            }
-        });
+        // save this instance to the cluster.
+        save(instance);
 
-        core.periodic(() -> 1000, "pollQueue", (id) -> poll());
-        core.periodic(() -> 5000, "saveInstance", (id) -> save());
+        // start polling timers.
+        timers();
     }
 
-    private void save() {
+    private void timers() {
+        // cannot run this on the event loop thread - because cluster convergence
+        // blocks the vertx thread. so when a single instance goes offline
+        // all other instances will be falsely detected as offline.
+        thread.scheduleWithFixedDelay(() -> {
+            try {
+                instance.calculateSystemLoad();
+                save(instance);
+            } catch (Throwable e) {
+                throw new CoreRuntimeException(e.getMessage());
+            }
+        }, 0, INSTANCE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+
+        core.periodic(() -> 500, "pollQueue", (id) -> poll());
+    }
+
+    private void save(InstanceInfo instance) {
+        instance.setUpdated(System.currentTimeMillis());
         instances.put(instance, done -> {
             if (done.failed()) {
                 logger.onError(done.cause());
@@ -112,13 +126,14 @@ public class ClusteredJobManager implements JobManager {
         instance.setBuilds(instance.getBuilds() + 1);
         job.setSaver(this::save);
         job.setLogger(this::log);
-        job.log("Build starting on executor '" + instance.getInstance() + "' ..");
-        save();
+        job.setInstance(config.getInstanceName());
+        job.log("Build starting on executor '" + instance.getId() + "' ..");
+        save(job);
     }
 
     private void complete() {
         instance.setBuilds(instance.getBuilds() - 1);
-        save();
+        save(instance);
     }
 
     @Override
@@ -169,8 +184,39 @@ public class ClusteredJobManager implements JobManager {
     @Override
     public Future<Collection<InstanceInfo>> instances() {
         Future<Collection<InstanceInfo>> future = Future.future();
-        instances.values(future);
+        instances.values(values -> {
+            if (values.succeeded()) {
+                future.complete(values.result().stream().peek(i -> {
+                    if (i.getUpdated() < System.currentTimeMillis() - INSTANCE_TIMEOUT) {
+                        if (i.isOnline()) {
+                            i.setOnline(false);
+                            failAllBuildsOnInstance(i);
+                            save(i);
+                        }
+                    }
+                }).sorted(Comparator.comparing(InstanceInfo::getId))
+                        .collect(Collectors.toList()));
+            } else {
+                future.fail(values.cause());
+            }
+        });
         return future;
+    }
+
+    private void failAllBuildsOnInstance(InstanceInfo instance) {
+        jobs.query(INSTANCE).equalTo(instance.getId())
+                .and(PROGRESS).in(Status.CLONING, Status.BUILDING)
+                .execute(query -> {
+                    if (query.succeeded()) {
+                        query.result().forEach(job -> {
+                            job.setProgress(Status.FAILED);
+                            log(job, String.format("'%s' has gone offline - build failed.", job.getInstance()));
+                            save(job);
+                        });
+                    } else {
+                        logger.onError(query.cause());
+                    }
+                });
     }
 
     @Override
@@ -191,37 +237,9 @@ public class ClusteredJobManager implements JobManager {
     }
 
     @Override
-    public Future<Void> putConfig(BuildConfiguration config) {
-        Future<Void> future = Future.future();
-        configs.put(config, future);
-        return future;
-    }
-
-    @Override
-    public Future<Void> removeConfig(String repository, String branch) {
-        Future<Void> future = Future.future();
-        configs.remove(BuildConfiguration.toKey(repository, branch), future);
-        return future;
-    }
-
-    @Override
-    public Future<BuildConfiguration> getConfig(String repository, String branch) {
-        Future<BuildConfiguration> future = Future.future();
-        configs.get(BuildConfiguration.toKey(repository, branch), future);
-        return future;
-    }
-
-    @Override
     public Future<BuildJob> getBuild(String buildId) {
         Future<BuildJob> future = Future.future();
         jobs.get(buildId, future);
-        return future;
-    }
-
-    @Override
-    public Future<Collection<BuildConfiguration>> getAllConfigs() {
-        Future<Collection<BuildConfiguration>> future = Future.future();
-        configs.values(future);
         return future;
     }
 
@@ -256,10 +274,16 @@ public class ClusteredJobManager implements JobManager {
         return future;
     }
 
+    /**
+     * @param vcs the version control system to use.
+     */
     public void setVCSProvider(VersionControlSystem vcs) {
         this.vcs = vcs;
     }
 
+    /**
+     * @param executor the build executor to use.
+     */
     public void setBuildExecutor(BuildExecutor executor) {
         this.executor = executor;
     }
