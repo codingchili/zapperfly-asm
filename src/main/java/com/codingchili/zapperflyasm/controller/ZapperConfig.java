@@ -32,7 +32,6 @@ public class ZapperConfig implements Configurable {
     private String groupName = "zapperfly-builds";
     private int capacity = 2;
 
-
     /**
      * Retrieves a storage implementation used to host objects of the given class.
      *

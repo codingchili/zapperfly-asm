@@ -36,10 +36,9 @@ public class StartCommand implements Command {
         VertxOptions options = system().getOptions();
 
         HazelcastClusterManager hazel = new HazelcastClusterManager();
-        Config config = new Config();
+        Config config = hazel.loadConfig();
         GroupConfig group = new GroupConfig().setName(executor.getProperty(GROUP).orElse("default"));
         config.setGroupConfig(group);
-        hazel.setConfig(config);
         options.setClusterManager(hazel);
         system().setOptions(options);
 

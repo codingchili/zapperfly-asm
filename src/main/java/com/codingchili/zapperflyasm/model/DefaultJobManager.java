@@ -1,22 +1,29 @@
 package com.codingchili.zapperflyasm.model;
 
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
-import io.vertx.core.*;
-import io.vertx.core.Future;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.logging.Logger;
-import com.codingchili.core.storage.*;
-
-import static com.codingchili.zapperflyasm.model.ApiRequest.*;
+import com.codingchili.core.storage.AsyncStorage;
+import com.codingchili.core.storage.QueryBuilder;
+import com.codingchili.core.storage.SortOrder;
+import com.codingchili.zapperflyasm.controller.ZapperConfig;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_BUILD;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_TIME;
 import static com.codingchili.zapperflyasm.model.BuildJob.START;
 import static com.codingchili.zapperflyasm.model.Status.*;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 
 /**
  * @author Robin Duda
@@ -24,6 +31,8 @@ import static com.codingchili.zapperflyasm.model.Status.*;
  * Manages jobs - distributes across the cluster.
  */
 public class DefaultJobManager implements JobManager {
+    public static final String BUILD_QUEUE = "build.queue";
+    public static final int LOCK_TIMEOUT = 5000;
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private static final int INSTANCE_TIMEOUT = 4000;
     private static final String BUILD = "build";
@@ -79,7 +88,7 @@ public class DefaultJobManager implements JobManager {
             }
         }, 0, INSTANCE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
 
-        core.periodic(() -> 500, "pollQueue", (id) -> poll());
+        core.periodic(() -> 800, "pollQueue", (id) -> poll());
     }
 
     private void save(InstanceInfo instance) {
@@ -96,41 +105,64 @@ public class DefaultJobManager implements JobManager {
      */
     private void poll() {
         if (instance.getBuilds() < instance.getCapacity()) {
-            jobs.query(PROGRESS).equalTo(Status.QUEUED)
-                    .order(SortOrder.DESCENDING)
-                    .orderBy(START)
-                    .pageSize(1)
-                    .page(0)
-                    .execute(query -> {
+            core.vertx().sharedData().getLockWithTimeout(BUILD_QUEUE, LOCK_TIMEOUT, lock -> {
+                if (lock.succeeded()) {
+                    getQueueQuery().execute(query -> {
+                        // if there are builds to start - hold on to the lock.
                         if (query.succeeded() && query.result().size() > 0) {
                             BuildJob job = query.result().iterator().next();
-                            begin(job);
+                            job.setProgress(CLONING);
+                            job.setInstance(config.getInstanceName());
 
-                            // clone the repository and the branch.
-                            vcs.clone(job).setHandler(clone -> {
-                                if (clone.succeeded()) {
-                                    // cloned ok - start building.
-                                    executor.build(job).setHandler(
-                                            (executed) -> handleCompleted(executed, job));
+                            jobs.put(job, (done) -> {
+                                lock.result().release();
+
+                                if (done.succeeded()) {
+                                    run(job);
                                 } else {
-                                    complete();
-                                    throw new CoreRuntimeException(clone.cause().getMessage());
+                                    logger.onError(done.cause());
                                 }
                             });
-                        } else if (query.failed()) {
+                        } else {
+                            // release the lock - no need to wait for state changes.
+                            lock.result().release();
+                        }
+                        if (query.failed()) {
                             logger.onError(query.cause());
                         }
                     });
+                } else {
+                    logger.onError(lock.cause());
+                }
+            });
         }
     }
 
-    private void begin(BuildJob job) {
+    private QueryBuilder<BuildJob> getQueueQuery() {
+        return jobs.query(PROGRESS).equalTo(Status.QUEUED)
+            .order(SortOrder.DESCENDING)
+            .orderBy(START)
+            .pageSize(1)
+            .page(0);
+    }
+
+    private void run(BuildJob job) {
         instance.setBuilds(instance.getBuilds() + 1);
         job.setSaver(this::save);
         job.setLogger(this::log);
-        job.setInstance(config.getInstanceName());
         job.log("Build starting on executor '" + instance.getId() + "' ..");
-        save(job);
+
+        // clone the repository and the branch.
+        vcs.clone(job).setHandler(clone -> {
+            if (clone.succeeded()) {
+                // cloned ok - start building.
+                executor.build(job).setHandler(
+                    (executed) -> handleCompleted(executed, job));
+            } else {
+                complete();
+                throw new CoreRuntimeException(clone.cause().getMessage());
+            }
+        });
     }
 
     private void complete() {
