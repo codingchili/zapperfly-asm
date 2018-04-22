@@ -4,12 +4,13 @@ import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.Future;
 
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.codingchili.core.configuration.Configurable;
-import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.files.Configurations;
+import com.codingchili.core.protocol.Serializer;
 import com.codingchili.core.storage.*;
 
 /**
@@ -22,14 +23,16 @@ import com.codingchili.core.storage.*;
  * but can go offline without interrupting any services.
  */
 public class ZapperConfig implements Configurable {
-    private static String PATH = "config.yaml";
-    private static ZapperConfig config = null;
+    private static String PATH = "zapperfly.yaml";
     private Map<String, User> users = new HashMap<>();
     private String storage = HazelMap.class.getName();
     private Integer timeoutSeconds = 300;
     private String buildPath = Paths.get("").toAbsolutePath().toString();
-    private String instanceName = null;
+    private String dockerLine = "docker run -w /tmp/build -it -v '$directory:/tmp/build' --rm $image $script";
     private String groupName = "zapperfly-builds";
+    private String windowsShell = "powershell.exe -Command";
+    private String unixShell = "/bin/bash -E";
+    private String instanceName = null;
     private int capacity = 2;
 
     /**
@@ -91,10 +94,7 @@ public class ZapperConfig implements Configurable {
      * @return the loaded configuration.
      */
     public static ZapperConfig get() {
-        if (config == null) {
-            config = Configurations.get(PATH, ZapperConfig.class);
-        }
-        return config;
+        return Configurations.get(PATH, ZapperConfig.class);
     }
 
     /**
@@ -116,6 +116,20 @@ public class ZapperConfig implements Configurable {
      */
     public String getStorage() {
         return storage;
+    }
+
+    /**
+     * @return the template string to use when starting docker builds.
+     */
+    public String getDockerLine() {
+        return dockerLine;
+    }
+
+    /**
+     * @param dockerLine set the template string to use when starting docker builds.
+     */
+    public void setDockerLine(String dockerLine) {
+        this.dockerLine = dockerLine;
     }
 
     /**
@@ -153,5 +167,37 @@ public class ZapperConfig implements Configurable {
 
     public void setInstanceName(String instanceName) {
         this.instanceName = instanceName;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Serializer.yaml(new ZapperConfig()));
+    }
+
+    /**
+     * @return the shell to use when executing on unix., example "/bin/bash -E"
+     */
+    public String getUnixShell() {
+        return unixShell;
+    }
+
+    /**
+     * @param unixShell set the shell to use when executing on windows.
+     */
+    public void setUnixShell(String unixShell) {
+        this.unixShell = unixShell;
+    }
+
+    /**
+     * @param windowsShell the windows shell to use when executing on windows.
+     */
+    public void setWindowsShell(String windowsShell) {
+        this.windowsShell = windowsShell;
+    }
+
+    /**
+     * @return the windows shell to use example "powershell.exe -Command".
+     */
+    public String getWindowsShell() {
+        return windowsShell;
     }
 }

@@ -3,6 +3,7 @@ package com.codingchili.zapperflyasm.model;
 import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import io.vertx.core.Future;
 import io.vertx.core.WorkerExecutor;
+import io.vertx.core.buffer.Buffer;
 
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
@@ -17,6 +18,7 @@ import com.codingchili.core.logging.Logger;
  * the working directory.
  */
 public class ProcessBuilderExecutor implements BuildExecutor {
+    private static final String BUILD_SCRIPT_NAME = "_zapperfly";
     private WorkerExecutor executor;
     private CoreContext core;
     private Logger logger;
@@ -38,7 +40,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
             job.setProgress(Status.BUILDING);
             logEvent("buildBegin", job);
             try {
-                String command = job.getConfig().getCmdLine();
+                String command = createCommand(job);
                 job.log(command);
 
                 AsyncProcess process = new AsyncProcess(core, command)
@@ -67,6 +69,25 @@ public class ProcessBuilderExecutor implements BuildExecutor {
         }, false, future);
 
         return future;
+    }
+
+    private String createCommand(BuildJob job) {
+        BuildConfiguration config = job.getConfig();
+        String command;
+
+        if (job.getConfig().getDockerImage().isEmpty()) {
+            command = config.getCmdLine();
+            job.log("WARNING: build is not running in a container !!!");
+        } else {
+            String script = "#!/bin/sh\n" + config.getCmdLine();
+            core.fileSystem().writeFileBlocking(job.getDirectory() + "/" + BUILD_SCRIPT_NAME, Buffer.buffer(script));
+            job.log(String.format("executing build script in docker image '%s'.", config.getDockerImage()));
+            command = ZapperConfig.get().getDockerLine()
+                    .replace("$image", config.getDockerImage())
+                    .replace("$script", BUILD_SCRIPT_NAME)
+                    .replace("$directory", job.getDirectory());
+        }
+        return command;
     }
 
     private void onError(BuildJob job, Throwable error) {

@@ -17,7 +17,7 @@ public class ApiRequest extends RequestWrapper {
     public static final String ID_BRANCH = "branch";
     public static final String ID_LOG = "log";
     public static final String ID_OFFSET = "offset";
-    public static final String ID_LIST= "list";
+    public static final String ID_LIST = "list";
     public static final String ID_TIME = "time";
     public static final String ID_DIRECTORY = "directory";
 
@@ -54,10 +54,19 @@ public class ApiRequest extends RequestWrapper {
     public BuildConfiguration getConfiguration() {
         BuildConfiguration config = Serializer.unpack(data().getJsonObject(ID_CONFIG), BuildConfiguration.class);
 
-        if (config.getBranch().isEmpty() || config.getRepository().isEmpty()) {
-            throw new CoreRuntimeException("build or branch cannot be null.");
-        }
+        config.sanitize();
+
+        require("repository", config.getRepository());
+        require("branch", config.getBranch());
+        require("cmdline", config.getCmdLine());
+
         return config;
+    }
+
+    private void require(String name, String value) {
+        if (value == null || value.isEmpty()) {
+            throw new CoreRuntimeException(name + " is required.");
+        }
     }
 
     /**

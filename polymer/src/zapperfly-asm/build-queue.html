@@ -2,6 +2,7 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input-container.html">
@@ -51,7 +52,6 @@
                 font-size: 1.0em;
                 margin-bottom: 4px;
                 opacity: 0.85;
-                display: block;
                 display: flex;
                 flex-direction: row;
                 justify-content: space-between;
@@ -177,7 +177,15 @@
                                 </iron-input>
                             </paper-input-container>
 
-                            <tag-input label="output directories" value="{{tagtext}}" values="{{config.outputDirs}}"></tag-input>
+                            <paper-input-container>
+                                <label slot="label">docker image (optional)</label>
+                                <iron-input slot="input" bind-value="{{config.dockerImage}}">
+                                    <input>
+                                </iron-input>
+                            </paper-input-container>
+
+                            <!-- enable this when artifact download is implemented. -->
+                            <!--<tag-input label="output directories" value="{{tagtext}}" values="{{config.outputDirs}}"></tag-input>-->
                         </div>
                         <paper-checkbox style="text-align: center;" checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
                         <!-- prevents the contents from overflowing and showing the scrollbar when the checkbox is ticked -->
@@ -212,6 +220,8 @@
         <template is="dom-if" if="{{_isEmpty(builds)}}">
             <span class="empty">empty</span>
         </template>
+
+        <paper-toast id="toast" text="[[errorText]]"></paper-toast>
 
         <iron-ajax auto id="configurationLoader" url="/api/?target=config&route=list"
                    handle-as="json"
@@ -293,13 +303,23 @@
         }
 
         _onDelete() {
+            this._reload();
+        }
+
+        _onUpdated(event, request) {
+            let response = request.response;
+            if (response.status === 'ERROR') {
+                this.errorText = response.message;
+                this.$.toast.open();
+            } else {
+                this._reload();
+            }
+        }
+
+        _reload() {
             this.editing = false;
             this.creating = false;
             this.$.configurationLoader.generateRequest();
-        }
-
-        _onUpdated() {
-            this._onDelete();
         }
 
         _save() {

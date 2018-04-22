@@ -38,6 +38,7 @@
     "paper-item": "PolymerElements/paper-item#^2.1.0",
     "paper-input": "PolymerElements/paper-input#^2.2.1",
     "paper-checkbox": "PolymerElements/paper-checkbox#^2.0.2",
-    "paper-chip": "ThomasCybulski/paper-chip#2.0.16"
+    "paper-chip": "ThomasCybulski/paper-chip#2.0.16",
+    "paper-toast": "PolymerElements/paper-toast#^2.1.0"
   }
 }

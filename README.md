@@ -24,10 +24,10 @@ Optional commandline arguments
 # Features 😎
 - build scheduling over multiple hosts
 - real time log monitoring
+- running builds in docker containers.
+- tune workload per instance based on number of parallel builds.
 - downloading of build artifacts (TBD)
 - support for simple authentication (TBD)
-- running builds (+servers) in nested docker containers (TBD)
-- tune workload per instance based on number of parallel builds.
 
 Features not implemented 😐
 - enterprise-xml-annotations-headache-complexity generator.

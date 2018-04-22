@@ -141,12 +141,10 @@ public class AsyncProcess {
         String os = System.getProperty("os.name");
 
         if (os.toLowerCase().contains("windows")) {
-            // assume cmd.exe exists on windows.
-            //return "cmd.exe /C "; // todo: fallback to cmd.
-            return "powershell.exe -Command ";
+            return ZapperConfig.get().getWindowsShell() + " ";
         } else {
             // assume bash exists on unix.
-            return "/bin/bash -E ";
+            return ZapperConfig.get().getUnixShell() + " ";
         }
     }
 

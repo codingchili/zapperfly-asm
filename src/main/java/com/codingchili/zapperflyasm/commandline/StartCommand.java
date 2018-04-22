@@ -115,10 +115,4 @@ public class StartCommand implements Command {
     public String toString() {
         return getDescription();
     }
-
-    public static void main(String[] args) {
-        while (true) {
-            // lol.
-        }
-    }
 }
