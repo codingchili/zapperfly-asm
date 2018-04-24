@@ -24,7 +24,7 @@ public class Service implements CoreService {
                 .setServices(1)
                 .setMetrics(false);
 
-        launcher().setVersion("1.0.0")
+        launcher().setVersion("1.0.2")
                 .setApplication("zapperfly-asm")
                 .deployable(Service.class)
                 .setClustered(true);

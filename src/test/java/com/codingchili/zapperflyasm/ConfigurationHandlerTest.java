@@ -27,7 +27,7 @@ import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 @RunWith(VertxUnitRunner.class)
 public class ConfigurationHandlerTest {
     private static final String BRANCH = "BRANCH";
-    private static final String REPO = "REPO";
+    private static final String REPO = "https://REPO/";
     private ConfigurationHandler handler;
 
     @Before
@@ -50,8 +50,10 @@ public class ConfigurationHandlerTest {
         Async async = test.async();
 
         BuildConfiguration config = new BuildConfiguration();
-        config.setRepository("repo_test");
+        config.setRepository("https://repo/");
         config.setBranch("br_test");
+        config.setCmdLine("./build");
+        config.setDockerImage("anapsix/alpine-java");
 
         // and now attempt to remove the configured build.
         Runnable unconfigure = () -> {

@@ -1,11 +1,11 @@
 package com.codingchili.zapperflyasm.model;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.codingchili.zapperflyasm.controller.ZapperConfig;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -13,69 +13,45 @@ import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.logging.Logger;
 import com.codingchili.core.storage.AsyncStorage;
-import com.codingchili.core.storage.QueryBuilder;
 import com.codingchili.core.storage.SortOrder;
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
-import static com.codingchili.zapperflyasm.model.ApiRequest.ID_BUILD;
-import static com.codingchili.zapperflyasm.model.ApiRequest.ID_TIME;
-import static com.codingchili.zapperflyasm.model.BuildJob.START;
-import static com.codingchili.zapperflyasm.model.Status.*;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_BUILD;
+import static com.codingchili.zapperflyasm.model.BuildJob.START;
+import static com.codingchili.zapperflyasm.model.HazelJobQueue.POLL_WAIT;
+import static com.codingchili.zapperflyasm.model.Status.*;
 
 /**
  * @author Robin Duda
  * <p>
  * Manages jobs - distributes across the cluster.
  */
-public class DefaultJobManager implements JobManager {
-    public static final String BUILD_QUEUE = "build.queue";
-    public static final int LOCK_TIMEOUT = 5000;
+public class DefaultBuildManager implements BuildManager {
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private static final int INSTANCE_TIMEOUT = 4000;
-    private static final String BUILD = "build";
     private static final String PROGRESS = "progress";
     private static final String INSTANCE = "instance";
-    private AsyncStorage<BuildJob> jobs;
-    private AsyncStorage<LogEvent> logs;
-    private AsyncStorage<InstanceInfo> instances;
-    private VersionControlSystem vcs;
     private ZapperConfig config = ZapperConfig.get();
     private InstanceInfo instance = new InstanceInfo();
+    private VersionControlSystem vcs;
+    private AsyncStorage<InstanceInfo> instances;
+    private AsyncStorage<BuildJob> builds;
     private BuildExecutor executor;
-    private Logger logger;
+    private JobQueue queue;
+    private LogStore logs;
     private CoreContext core;
+    private Logger logger;
 
     /**
      * Creates a new clustered job manager.
      *
-     * @param core the core on which the manager is to be run.
-     * @param jobs a potentially clustered store of jobs to execute.
-     * @param logs a potentially clulstered store to store job logs.
+     * @param core the core context.
      */
-    public DefaultJobManager(CoreContext core,
-                             AsyncStorage<BuildJob> jobs,
-                             AsyncStorage<LogEvent> logs,
-                             AsyncStorage<InstanceInfo> instances) {
-
-        this.vcs = new GitExecutor(core);
-        this.executor = new ProcessBuilderExecutor(core);
-        this.jobs = jobs;
-        this.logs = logs;
+    public DefaultBuildManager(CoreContext core) {
         this.core = core;
         this.logger = core.logger(getClass());
-        this.instances = instances;
-
-        // save this instance to the cluster.
-        save(instance);
-
-        // start polling timers.
-        timers();
     }
 
-    private void timers() {
+    public void start() {
         // cannot run this on the event loop thread - because cluster convergence
         // blocks the vertx thread. so when a single instance goes offline
         // all other instances will be falsely detected as offline.
@@ -84,11 +60,11 @@ public class DefaultJobManager implements JobManager {
                 instance.calculateSystemLoad();
                 save(instance);
             } catch (Throwable e) {
-                throw new CoreRuntimeException(e.getMessage());
+                logger.onError(e);
             }
         }, 0, INSTANCE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
 
-        core.periodic(() -> 800, "pollQueue", (id) -> poll());
+        core.periodic(() -> POLL_WAIT, "jobPoller", (id) -> poll());
     }
 
     private void save(InstanceInfo instance) {
@@ -105,45 +81,26 @@ public class DefaultJobManager implements JobManager {
      */
     private void poll() {
         if (instance.getBuilds() < instance.getCapacity()) {
-            core.vertx().sharedData().getLockWithTimeout(BUILD_QUEUE, LOCK_TIMEOUT, lock -> {
-                if (lock.succeeded()) {
-                    getQueueQuery().execute(query -> {
-                        // if there are builds to start - hold on to the lock.
-                        if (query.succeeded() && query.result().size() > 0) {
-                            BuildJob job = query.result().iterator().next();
-                            job.setProgress(CLONING);
-                            job.setInstance(config.getInstanceName());
+            queue.poll().setHandler(done -> {
+                if (done.succeeded() && done.result() != null) {
+                    BuildJob job = done.result();
+                    job.setProgress(CLONING);
+                    job.setInstance(config.getInstanceName());
 
-                            jobs.put(job, (done) -> {
-                                lock.result().release();
-
-                                if (done.succeeded()) {
-                                    run(job);
-                                } else {
-                                    logger.onError(done.cause());
-                                }
-                            });
+                    builds.put(job, (save) -> {
+                        if (save.succeeded()) {
+                            run(job);
                         } else {
-                            // release the lock - no need to wait for state changes.
-                            lock.result().release();
-                        }
-                        if (query.failed()) {
-                            logger.onError(query.cause());
+                            logger.onError(save.cause());
                         }
                     });
                 } else {
-                    logger.onError(lock.cause());
+                    if (done.failed()) {
+                        logger.onError(done.cause());
+                    }
                 }
             });
         }
-    }
-
-    private QueryBuilder<BuildJob> getQueueQuery() {
-        return jobs.query(PROGRESS).equalTo(Status.QUEUED)
-            .order(SortOrder.DESCENDING)
-            .orderBy(START)
-            .pageSize(1)
-            .page(0);
     }
 
     private void run(BuildJob job) {
@@ -157,7 +114,7 @@ public class DefaultJobManager implements JobManager {
             if (clone.succeeded()) {
                 // cloned ok - start building.
                 executor.build(job).setHandler(
-                    (executed) -> handleCompleted(executed, job));
+                        (executed) -> handleCompleted(executed, job));
             } else {
                 complete();
                 throw new CoreRuntimeException(clone.cause().getMessage());
@@ -168,6 +125,7 @@ public class DefaultJobManager implements JobManager {
     private void complete() {
         instance.setBuilds(instance.getBuilds() - 1);
         save(instance);
+        poll();
     }
 
     @Override
@@ -178,18 +136,18 @@ public class DefaultJobManager implements JobManager {
         log(job, "Build " + job.getId() + " queued.");
 
         // add the job to the queue.
-        jobs.put(job, (put) -> {
-            if (put.succeeded()) {
+        queue.submit(job).setHandler(done -> {
+            if (done.succeeded()) {
                 future.complete(job);
             } else {
-                future.fail(put.cause());
+                future.fail(done.cause());
             }
         });
         return future;
     }
 
     private void save(BuildJob job) {
-        jobs.put(job, (done) -> {
+        builds.put(job, (done) -> {
             if (done.failed()) {
                 logger.onError(done.cause());
             }
@@ -198,9 +156,7 @@ public class DefaultJobManager implements JobManager {
 
     private void log(BuildJob job, String line) {
         if (line != null && !line.isEmpty()) {
-            logs.put(new LogEvent()
-                    .setBuild(job.getId())
-                    .setLine(line), done -> {
+            logs.add(job.getId(), new LogEvent(line)).setHandler(done -> {
                 if (done.failed()) {
                     logger.onError(done.cause());
                 }
@@ -238,7 +194,7 @@ public class DefaultJobManager implements JobManager {
     }
 
     private void failAllBuildsOnInstance(InstanceInfo instance) {
-        jobs.query(INSTANCE).equalTo(instance.getId())
+        builds.query(INSTANCE).equalTo(instance.getId())
                 .and(PROGRESS).in(Status.CLONING, Status.BUILDING)
                 .execute(query -> {
                     if (query.succeeded()) {
@@ -273,33 +229,47 @@ public class DefaultJobManager implements JobManager {
     @Override
     public Future<BuildJob> getBuild(String buildId) {
         Future<BuildJob> future = Future.future();
-        jobs.get(buildId, future);
+        builds.get(buildId, future);
         return future;
     }
 
     @Override
-    public Future<Collection<BuildJob>> getAll() {
+    public Future<Collection<BuildJob>> queued() {
         Future<Collection<BuildJob>> future = Future.future();
-        jobs.query(ID_BUILD).matches(".*")
+        queue.values().setHandler(values -> {
+            if (values.succeeded()) {
+                future.complete(values.result());
+            } else {
+                future.fail(values.cause());
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public Future<Collection<BuildJob>> history() {
+        Future<Collection<BuildJob>> future = Future.future();
+        builds.query(ID_BUILD).matches(".*")
                 .pageSize(24).page(0)
                 .orderBy(START)
                 .order(SortOrder.DESCENDING)
-                .execute(future);
+                .execute(query -> {
+                    if (query.succeeded()) {
+                        future.complete(query.result());
+                    } else {
+                        future.fail(query.cause());
+                    }
+                });
         return future;
     }
 
     @Override
     public Future<Collection<LogEvent>> getLog(String buildId, Long time) {
         Future<Collection<LogEvent>> future = Future.future();
-        QueryBuilder<LogEvent> query = logs.query(BUILD).equalTo(buildId)
-                .and(ID_TIME).between(time + 1, Long.MAX_VALUE)
-                .orderBy(ID_TIME)
-                .order(SortOrder.ASCENDING);
 
-        query.execute(done -> {
+        logs.retrieve(buildId, time).setHandler(done -> {
             if (done.succeeded()) {
-                future.complete(done.result().stream()
-                        .map(event -> event.setBuild(null).setId(null)).collect(Collectors.toList()));
+                future.complete(done.result());
             } else {
                 logger.onError(done.cause());
                 future.fail(done.cause());
@@ -311,58 +281,64 @@ public class DefaultJobManager implements JobManager {
     @Override
     public Future<Void> clear() {
         Future<Void> future = Future.future();
-
-        Future<Void> clearLog = Future.future();
-        logs.clear(clearLog);
-
-        Future<Void> clearBuilds = Future.future();
-        jobs.query(PROGRESS).in(FAILED, DONE, CANCELLED).execute(query -> {
+        builds.query(PROGRESS).in(FAILED, DONE, CANCELLED).execute(query -> {
             if (query.succeeded()) {
                 AtomicInteger count = new AtomicInteger(query.result().size());
 
                 // nothing to remove - make sure to complete.
                 if (count.get() == 0) {
-                    clearBuilds.complete();
+                    future.complete();
                 }
 
                 // try and remove all query results.
                 query.result().forEach(job -> {
-                    jobs.remove(job.getId(), (removed) -> {
-                        if (removed.failed()) {
-                            clearBuilds.tryFail(removed.cause());
-                        } else {
-                            if (count.decrementAndGet() == 0) {
-                                clearBuilds.complete();
+                    logs.clear(job.getId()).setHandler(logRemove -> {
+                        builds.remove(job.getId(), (removed) -> {
+                            if (removed.failed()) {
+                                future.tryFail(removed.cause());
+                            } else {
+                                if (count.decrementAndGet() == 0) {
+                                    future.complete();
+                                }
                             }
+                        });
+
+                        if (logRemove.failed()) {
+                            logger.onError(logRemove.cause());
                         }
                     });
                 });
             } else {
-                clearBuilds.fail(query.cause());
-            }
-        });
-
-        CompositeFuture.all(clearLog, clearBuilds).setHandler(done -> {
-            if (done.succeeded()) {
-                future.complete();
-            } else {
-                future.fail(done.cause());
+                future.fail(query.cause());
             }
         });
         return future;
     }
 
-    /**
-     * @param vcs the version control system to use.
-     */
-    public void setVCSProvider(VersionControlSystem vcs) {
+    public void setVcs(VersionControlSystem vcs) {
         this.vcs = vcs;
     }
 
-    /**
-     * @param executor the build executor to use.
-     */
-    public void setBuildExecutor(BuildExecutor executor) {
+    public void setInstances(AsyncStorage<InstanceInfo> instances) {
+        this.instances = instances;
+
+        // save this instance to the cluster.
+        save(instance);
+    }
+
+    public void setBuilds(AsyncStorage<BuildJob> builds) {
+        this.builds = builds;
+    }
+
+    public void setQueue(JobQueue queue) {
+        this.queue = queue;
+    }
+
+    public void setLogs(LogStore logs) {
+        this.logs = logs;
+    }
+
+    public void setExecutor(BuildExecutor executor) {
         this.executor = executor;
     }
 }

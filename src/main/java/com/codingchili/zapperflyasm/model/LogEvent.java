@@ -1,34 +1,26 @@
 package com.codingchili.zapperflyasm.model;
 
-import com.hazelcast.core.PartitionAware;
+import io.vertx.core.shareddata.Shareable;
 
+import java.io.Serializable;
 import java.time.ZonedDateTime;
-import java.util.UUID;
-
-import com.codingchili.core.storage.Storable;
-
-import static com.codingchili.zapperflyasm.model.ApiRequest.ID_TIME;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * A log record for build outputs.
  */
-public class LogEvent implements Storable, PartitionAware<String> {
-    private String id = UUID.randomUUID().toString();
+public class LogEvent implements Serializable, Shareable {
     private Long time = ZonedDateTime.now().toInstant().toEpochMilli();
-    private String build;
     private String line;
 
+    public LogEvent() {}
 
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    public LogEvent setId(String id) {
-        this.id = id;
-        return this;
+    /**
+     * @param line the text representing the event that occured.
+     */
+    public LogEvent(String line) {
+        this.line = line;
     }
 
     /**
@@ -53,31 +45,5 @@ public class LogEvent implements Storable, PartitionAware<String> {
     public LogEvent setTime(Long time) {
         this.time = time;
         return this;
-    }
-
-    /**
-     * @return primary index key for the log event.
-     */
-    public String getBuild() {
-        return build;
-    }
-
-    public LogEvent setBuild(String build) {
-        this.build = build;
-        return this;
-    }
-
-    @Override
-    public int compareToAttribute(Storable other, String attribute) {
-        if (attribute.equals(ID_TIME)) {
-            return time.compareTo(((LogEvent) other).time);
-        } else {
-            return 0;
-        }
-    }
-
-    @Override
-    public String getPartitionKey() {
-        return build;
     }
 }

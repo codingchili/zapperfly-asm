@@ -10,7 +10,7 @@ import com.codingchili.core.protocol.Serializer;
  * <p>
  * Maps requests to ease retrieval of attributes in the API.
  */
-public class ApiRequest extends RequestWrapper {
+public class ApiRequest implements RequestWrapper {
     public static final String ID_BUILD = "id";
     public static final String ID_CONFIG = "config";
     public static final String ID_REPO = "repository";
@@ -20,12 +20,13 @@ public class ApiRequest extends RequestWrapper {
     public static final String ID_LIST = "list";
     public static final String ID_TIME = "time";
     public static final String ID_DIRECTORY = "directory";
+    private Request request;
 
     /**
      * @param request the original request to decorate.
      */
     public ApiRequest(Request request) {
-        super(request);
+        this.request = request;
     }
 
     /**
@@ -81,5 +82,10 @@ public class ApiRequest extends RequestWrapper {
      */
     public String getBranch() {
         return data().getString(ID_BRANCH);
+    }
+
+    @Override
+    public Request request() {
+        return request;
     }
 }

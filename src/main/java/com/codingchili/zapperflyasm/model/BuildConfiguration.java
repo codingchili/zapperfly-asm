@@ -55,8 +55,9 @@ public class BuildConfiguration implements Storable {
         return autoclean;
     }
 
-    public void setOutputDirs(List<String> outputDirs) {
+    public BuildConfiguration setOutputDirs(List<String> outputDirs) {
         this.outputDirs = outputDirs;
+        return this;
     }
 
     /**
@@ -76,8 +77,9 @@ public class BuildConfiguration implements Storable {
     /**
      * @param dockerImage the name (alphanumeric) of the docker image to run the build inside.
      */
-    public void setDockerImage(String dockerImage) {
+    public BuildConfiguration setDockerImage(String dockerImage) {
         this.dockerImage = dockerImage;
+        return this;
     }
 
     /**
@@ -90,8 +92,9 @@ public class BuildConfiguration implements Storable {
     /**
      * @param cmdLine the commandline to execute when starting the build.
      */
-    public void setCmdLine(String cmdLine) {
+    public BuildConfiguration setCmdLine(String cmdLine) {
         this.cmdLine = cmdLine;
+        return this;
     }
 
     /**
@@ -115,22 +118,25 @@ public class BuildConfiguration implements Storable {
     /**
      * @param autoclean true if the build should be cleaned after exiting.
      */
-    public void setAutoclean(boolean autoclean) {
+    public BuildConfiguration setAutoclean(boolean autoclean) {
         this.autoclean = autoclean;
+        return this;
     }
 
     /**
      * @param repository an url to the git repository to clone.
      */
-    public void setRepository(String repository) {
+    public BuildConfiguration setRepository(String repository) {
         this.repository = repository;
+        return this;
     }
 
     /**
      * @param branch the branch in the git repository to clone.
      */
-    public void setBranch(String branch) {
+    public BuildConfiguration setBranch(String branch) {
         this.branch = branch;
+        return this;
     }
 
     /**

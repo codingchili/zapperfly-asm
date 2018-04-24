@@ -102,8 +102,6 @@
 
         _onBuildsDownloaded(event, request) {
             this.builds = request.response.list;
-            this.$.queue.setBuilds(this.builds);
-            this.$.queue.setLoader(() => this._load());
             this.$.builds.setBuilds(this.builds);
         }
 

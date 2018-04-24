@@ -209,12 +209,8 @@
             </div>
         </paper-dialog>
 
-        <template is="dom-repeat" items="{{builds}}" as="build">
-            <template is="dom-if" if="{{_show(build)}}">
-
+        <template is="dom-repeat" items="[[builds]]" as="build">
                 <build-card build="[[build]]"></build-card>
-
-            </template>
         </template>
 
         <template is="dom-if" if="{{_isEmpty(builds)}}">
@@ -231,6 +227,10 @@
         <iron-ajax id="buildScheduler"
                    url="/api/?target=builds&route=submit&branch=[[branch]]&repository=[[repository]]"
                    handle-as="json" on-response="_onQueued" debounce-duration="300">
+        </iron-ajax>
+
+        <iron-ajax id="loadQueue" method="post" url="/api/?target=builds&route=queued"
+                   handle-as="json" on-response="_onBuilds" debounce-duration="300" auto>
         </iron-ajax>
 
         <iron-ajax id="updateConfig" method="post" url="/api/"
@@ -256,11 +256,15 @@
             this.started = false;
             this.editing = false;
             this.creating = false;
+
+            setInterval(() => {
+                this.$.loadQueue.generateRequest();
+            }, 2500);
         }
 
-        setBuilds(builds) {
+        _onBuilds(event, request) {
             this.started = true;
-            this.builds = builds;
+            this.set('builds', request.response.list);
         }
 
         setLoader(loader) {
@@ -272,12 +276,7 @@
         }
 
         _isEmpty() {
-            for (let i in this.builds) {
-                if (this._show(this.builds[i])) {
-                    return false;
-                }
-            }
-            return true;
+            return this.builds.length === 0;
         }
 
         _start() {
@@ -285,10 +284,6 @@
             this.creating = false;
             this.$.configurationLoader.generateRequest();
             this.$.queue.open();
-        }
-
-        _show(build) {
-            return (build.progress == 'QUEUED')
         }
 
         _edit(e) {
@@ -351,9 +346,7 @@
         }
 
         _onQueued(event, request) {
-            if (this.loader) {
-                this.loader();
-            }
+            this.$.loadQueue.generateRequest();
         }
 
         _onConfiguration(event, request) {

@@ -65,6 +65,7 @@
 
           .text {
             word-break: break-all;
+            white-space: pre-wrap;
           }
 
           hr {
@@ -106,7 +107,7 @@
                 <template is="dom-repeat" items="{{log}}" as="event">
                         <span class="line">[{{_line()}}]</span>
                         <span class="date">[[_toDate(event.time)]]</span>
-                        <span class="text">[[event.line]]</span>
+                    <span class="text">[[_parseLine(event.line)]]</span>
                     <hr>
                 </template>
             </paper-dialog-scrollable>
@@ -164,15 +165,19 @@
             // update the build information after opening the log.
             if (this.build != null) {
                 for (let i in builds) {
-                    if (builds[i].id == this.build.id) {
+                    if (builds[i].id === this.build.id) {
                         this.build = builds[i];
                     }
                 }
             }
         }
 
+        _parseLine(line) {
+            return line;
+        }
+
         _isEmpty() {
-            return this.builds.length == 0;
+            return this.builds.length === 0;
         }
 
         _onClick(e) {

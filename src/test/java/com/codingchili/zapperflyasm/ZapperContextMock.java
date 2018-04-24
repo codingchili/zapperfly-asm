@@ -18,11 +18,11 @@ import com.codingchili.core.storage.*;
  */
 public class ZapperContextMock extends ZapperContext {
     private ConfigurationManager branches;
-    private DefaultJobManager manager;
+    private DefaultBuildManager manager;
     private AsyncStorage<BuildConfiguration> configs;
     private AsyncStorage<InstanceInfo> instances;
-    private AsyncStorage<BuildJob> jobs;
-    private AsyncStorage<LogEvent> logs;
+    private AsyncStorage<BuildJob> builds;
+    private LogStoreMock logs;
 
     public ZapperContextMock() {
         super(new SystemContext());
@@ -43,14 +43,21 @@ public class ZapperContextMock extends ZapperContext {
         config.setInstanceName(Environment.hostname().orElse("zap.instance.1"));
 
         mock.configs = getMap(BuildConfiguration.class);
-        mock.jobs = getMap(BuildJob.class);
-        mock.logs = getMap(LogEvent.class);
+        mock.builds = getMap(BuildJob.class);
         mock.instances = getMap(InstanceInfo.class);
-
-        mock.manager = new DefaultJobManager(mock, mock.jobs, mock.logs, mock.instances);
+        mock.logs = new LogStoreMock();
         mock.branches = new DefaultConfigurationManager(mock.configs);
-        mock.manager.setBuildExecutor(new BuildExecutorMock(true));
-        mock.manager.setVCSProvider(new VCSMock(mock));
+
+        DefaultBuildManager manager = new DefaultBuildManager(mock);
+
+        manager.setExecutor(new BuildExecutorMock(true));
+        manager.setQueue(new JobQueueMock());
+        manager.setLogs(mock.logs);
+        manager.setBuilds(mock.builds);
+        manager.setVcs(new VCSMock(mock));
+        manager.setInstances(mock.instances);
+
+        mock.manager = manager;
         return Future.succeededFuture(mock);
     }
 
@@ -59,7 +66,7 @@ public class ZapperContextMock extends ZapperContext {
     }
 
     @Override
-    public JobManager getJobManager() {
+    public BuildManager getJobManager() {
         return manager;
     }
 
@@ -72,14 +79,14 @@ public class ZapperContextMock extends ZapperContext {
      * @param logEvent adds a log event to the log store.
      */
     public void log(LogEvent logEvent) {
-        logs.put(logEvent, this::succeed);
+        logs.add("default", logEvent);
     }
 
     /**
      * @param job adds a job to the job store.
      */
     public void addJob(BuildJob job) {
-        jobs.put(job, this::succeed);
+        builds.put(job, this::succeed);
     }
 
     public void addConfig(BuildConfiguration config) {

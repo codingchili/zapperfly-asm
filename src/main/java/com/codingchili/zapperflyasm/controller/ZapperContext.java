@@ -14,7 +14,7 @@ import com.codingchili.core.storage.AsyncStorage;
  */
 public class ZapperContext extends SystemContext {
     private DefaultConfigurationManager configurations;
-    private DefaultJobManager builds;
+    private BuildManager builds;
 
     /**
      * @param core an existing context.
@@ -35,19 +35,35 @@ public class ZapperContext extends SystemContext {
         CompositeFuture.join(
                 ZapperConfig.getStorage(core, BuildJob.class),
                 ZapperConfig.getStorage(core, BuildConfiguration.class),
-                ZapperConfig.getStorage(core, LogEvent.class),
                 ZapperConfig.getStorage(core, InstanceInfo.class)
         ).setHandler(done -> {
             if (done.succeeded()) {
-                AsyncStorage<BuildJob> jobs = done.result().resultAt(0);
+                AsyncStorage<BuildJob> builds = done.result().resultAt(0);
                 AsyncStorage<BuildConfiguration> configs = done.result().resultAt(1);
-                AsyncStorage<LogEvent> logs = done.result().resultAt(2);
-                AsyncStorage<InstanceInfo> instances = done.result().resultAt(3);
+                AsyncStorage<InstanceInfo> instances = done.result().resultAt(2);
 
                 ZapperContext zapper = new ZapperContext(core);
+                DefaultBuildManager manager = new DefaultBuildManager(core);
 
-                zapper.builds = new DefaultJobManager(core, jobs, logs, instances);
+                manager.setInstances(instances);
+                manager.setBuilds(builds);
+                manager.setExecutor(new ProcessBuilderExecutor(core));
+                manager.setVcs(new GitExecutor(core));
+
+                HazelJobQueue.create(core).setHandler(queue -> {
+                    if (queue.succeeded()) {
+                        manager.setQueue(queue.result());
+                    }
+                });
+                HazelLogStore.create(core).setHandler(logStore -> {
+                    if (logStore.succeeded()) {
+                        manager.setLogs(logStore.result());
+                    }
+                });
+
                 zapper.configurations = new DefaultConfigurationManager(configs);
+                zapper.builds = manager;
+                manager.start();
 
                 future.complete(zapper);
             } else {
@@ -74,7 +90,7 @@ public class ZapperContext extends SystemContext {
     /**
      * @return the job manager to use for the application context.
      */
-    public JobManager getJobManager() {
+    public BuildManager getJobManager() {
         return builds;
     }
 

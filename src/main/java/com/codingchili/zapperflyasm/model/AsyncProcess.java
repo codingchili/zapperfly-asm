@@ -7,6 +7,7 @@ import java.io.*;
 import java.time.ZonedDateTime;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
@@ -61,6 +62,8 @@ public class AsyncProcess {
         return this;
     }
 
+    String nextLine = "";
+
     /**
      * Reads the output of a process on both the stdout and stderr. The output
      * is written to the given build log.
@@ -71,14 +74,26 @@ public class AsyncProcess {
     public void readProcessOutput(Consumer<String> reader, Supplier<Boolean> done) {
         core.periodic(() -> LOG_DELAY, "processReader", (id) -> {
 
-            if (!done.get()) {
+            if (done.get()) {
+                core.cancel(id);
+            } else {
                 InputStream std = process.getInputStream();
                 InputStream err = process.getErrorStream();
 
                 Consumer<InputStream> log = (stream) -> {
                     try {
-                        String line = new BufferedReader(new InputStreamReader(stream)).readLine();
-                        reader.accept(line);
+                        byte[] buffer = new byte[stream.available()];
+                        stream.read(buffer, 0, buffer.length);
+
+                        String line = nextLine + new String(buffer);
+
+                        if (line.contains("\n")) {
+                            nextLine = line.substring(line.lastIndexOf("\n"), line.length());
+                            line = line.substring(0, line.lastIndexOf("\n"));
+                            reader.accept(line);
+                        } else {
+                            nextLine = line;
+                        }
                     } catch (IOException e) {
                         logger.onError(e);
                     }
@@ -94,8 +109,6 @@ public class AsyncProcess {
                     logger.onError(e);
                 }
 
-            } else {
-                core.cancel(id);
             }
         });
     }

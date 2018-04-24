@@ -6,7 +6,6 @@ import io.vertx.core.Future;
 import java.util.Arrays;
 
 import com.codingchili.core.context.CoreContext;
-import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
@@ -15,7 +14,7 @@ import static com.codingchili.core.protocol.RoleMap.PUBLIC;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Handler for repo/branch configurations.
  */
 @Roles(PUBLIC)
@@ -32,12 +31,12 @@ public class ConfigurationHandler implements CoreHandler {
     @Override
     public void start(Future<Void> start) {
         // add a default test job.
-        BuildConfiguration config = new BuildConfiguration();
-        config.setRepository("https://github.com/codingchili/zapperfly-asm.git");
-        config.setBranch("master");
-        config.setOutputDirs(Arrays.asList("out", "build", "target"));
-        config.setCmdLine("./gradlew build --info --debug");
-        config.setAutoclean(true);
+        BuildConfiguration config = new BuildConfiguration()
+                .setRepository("https://github.com/octocat/Hello-World.git")
+                .setBranch("master")
+                .setOutputDirs(Arrays.asList("out", "build", "target"))
+                .setCmdLine("java -version")
+                .setAutoclean(true);
         configurations.putConfig(config).setHandler(start);
     }
 

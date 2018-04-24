@@ -14,6 +14,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import com.codingchili.core.protocol.Serializer;
 import com.codingchili.core.testing.RequestMock;
 import com.codingchili.core.testing.ResponseListener;
 
@@ -44,7 +45,7 @@ public class BuildHandlerTest {
             handler.init(context);
 
             context.addConfig(new BuildConfiguration(REPOSITORY, BRANCH));
-            context.log(new LogEvent().setBuild(TEST_ID));
+            context.log(new LogEvent("testLine"));
             context.addJob(getTestBuild());
 
             async.complete();
@@ -117,8 +118,25 @@ public class BuildHandlerTest {
             // logs should be included.
             test.assertFalse(response.getJsonArray(ID_COLLECTION).isEmpty());
             async.complete();
-        }, new JsonObject()
-                .put(ID_BUILD, TEST_ID)));
+        }, Serializer.json(
+                new BuildConfiguration()
+                    .setBranch("master")
+                    .setRepository("https://test")
+                    .setCmdLine("./gradlew"))));
+    }
+
+    @Test
+    public void clearBuildLog(TestContext test) {
+        handler.clear(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+        }, new JsonObject()));
+    }
+
+    @Test
+    public void getBuildQueue(TestContext test) {
+        handler.queued(request((response, status) -> {
+            test.assertEquals(ACCEPTED, status);
+        }, new JsonObject()));
     }
 
     @Test

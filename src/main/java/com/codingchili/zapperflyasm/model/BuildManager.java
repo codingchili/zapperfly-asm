@@ -5,12 +5,14 @@ import io.vertx.core.Future;
 import java.util.Collection;
 import java.util.List;
 
+import com.codingchili.core.protocol.Route;
+
 /**
  * @author Robin Duda
  * <p>
  * Interface for the build manager.
  */
-public interface JobManager {
+public interface BuildManager {
 
     /**
      * Schedules a build for execution on the repo and branch in the given config.
@@ -61,9 +63,14 @@ public interface JobManager {
     Future<BuildJob> getBuild(String buildId);
 
     /**
-     * @return all builds that has ever been scheduled.
+     * @return a list of builds that has been queued.
      */
-    Future<Collection<BuildJob>> getAll();
+    Future<Collection<BuildJob>> queued();
+
+    /**
+     * @return all builds that are either finished or in progress.
+     */
+    Future<Collection<BuildJob>> history();
 
     /**
      * Retrieves the log of the given build starting from the given line number.

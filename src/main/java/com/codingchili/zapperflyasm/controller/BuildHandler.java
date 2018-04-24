@@ -4,6 +4,7 @@ import com.codingchili.zapperflyasm.model.*;
 import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -29,7 +30,7 @@ import static com.codingchili.zapperflyasm.model.ApiRequest.ID_LIST;
 @DataModel(ApiRequest.class)
 public class BuildHandler implements CoreHandler {
     private Protocol<Request> protocol = new Protocol<>(this);
-    private JobManager manager;
+    private BuildManager manager;
     private ZapperContext context;
 
     @Override
@@ -88,20 +89,34 @@ public class BuildHandler implements CoreHandler {
     }
 
     @Api
-    @Description("Lists all builds that has been executed on the server.")
-    public void list(ApiRequest request) {
-        manager.getAll().setHandler(done -> {
+    public void queued(ApiRequest request) {
+        manager.queued().setHandler(done -> {
             if (done.succeeded()) {
-                request.write(new JsonObject().put(ID_LIST,
-                        done.result().stream()
-                                .map(Serializer::json)
-                                .peek(json -> json.remove(ID_DIRECTORY))
-                                .collect(Collectors.toList()))
-                );
+                request.write(buildsToList(done.result()));
             } else {
                 request.error(done.cause());
             }
         });
+    }
+
+    @Api
+    @Description("Lists all builds that has been executed on the server.")
+    public void list(ApiRequest request) {
+        manager.history().setHandler(done -> {
+            if (done.succeeded()) {
+                request.write(buildsToList(done.result()));
+            } else {
+                request.error(done.cause());
+            }
+        });
+    }
+
+    private JsonObject buildsToList(Collection<BuildJob> jobs) {
+        return new JsonObject().put(ID_LIST,
+                jobs.stream()
+                        .map(Serializer::json)
+                        .peek(json -> json.remove(ID_DIRECTORY))
+                        .collect(Collectors.toList()));
     }
 
     @Api
