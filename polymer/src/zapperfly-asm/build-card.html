@@ -144,7 +144,6 @@
                 [[build.config.branch]]@{{_trimRepo(build.config.repository)}}
             </div>
 
-
             <div class="elapsed">
                 <template is="dom-if" if="{{_showTime(build)}}">
                     [[elapsed]]
@@ -181,10 +180,6 @@
             return 'build-card';
         }
 
-        constructor() {
-            super();
-        }
-
         ready() {
             super.ready();
 
@@ -199,19 +194,19 @@
 
         _cancellable(build) {
             let progress = build.progress;
-            return (progress == 'CLONING' || progress == 'BUILDING' || progress == 'QUEUED');
+            return (progress === 'CLONING' || progress === 'BUILDING' || progress === 'QUEUED');
         }
 
         _inProgress(build) {
-            return (build.progress == 'CLONING' || build.progress == 'BUILDING');
+            return (build.progress === 'CLONING' || build.progress === 'BUILDING');
         }
 
         _isCloning(build) {
-            return (build.progress == 'CLONING');
+            return (build.progress === 'CLONING');
         }
 
         _showTime(build) {
-            return !(build.progress == 'QUEUED') && !(build.progress == 'CLONING');
+            return !(build.progress === 'QUEUED') && !(build.progress === 'CLONING');
         }
 
         _progress(build) {
@@ -248,14 +243,6 @@
             return build.progress.toLowerCase();
         }
     }
+
     window.customElements.define(BuildCard.is, BuildCard);
-
-
-
-
-
-
-
-
-
 </script>

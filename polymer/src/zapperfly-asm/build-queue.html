@@ -267,16 +267,12 @@
             this.set('builds', request.response.list);
         }
 
-        setLoader(loader) {
-            this.loader = loader;
-        }
-
         _saveable(editing, creating) {
             return (editing | creating);
         }
 
-        _isEmpty() {
-            return this.builds.length === 0;
+        _isEmpty(builds) {
+            return builds.length === 0;
         }
 
         _start() {
@@ -346,7 +342,10 @@
         }
 
         _onQueued(event, request) {
-            this.$.loadQueue.generateRequest();
+            this.builds.push(request.response);
+            let builds = this.builds;
+            this.set('builds', []);
+            this.set('builds', builds);
         }
 
         _onConfiguration(event, request) {
