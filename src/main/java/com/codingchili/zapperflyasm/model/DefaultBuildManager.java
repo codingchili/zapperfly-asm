@@ -26,8 +26,9 @@ import static com.codingchili.zapperflyasm.model.Status.*;
  * Manages jobs - distributes across the cluster.
  */
 public class DefaultBuildManager implements BuildManager {
+    private static final int INSTANCE_TIMEOUT = 5000;
+    private static final int INSTANCE_UPDATE = 1000;
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
-    private static final int INSTANCE_TIMEOUT = 4000;
     private static final String PROGRESS = "progress";
     private static final String INSTANCE = "instance";
     private ZapperConfig config = ZapperConfig.get();
@@ -62,7 +63,7 @@ public class DefaultBuildManager implements BuildManager {
             } catch (Throwable e) {
                 logger.onError(e);
             }
-        }, 0, INSTANCE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+        }, 0, INSTANCE_UPDATE, TimeUnit.MILLISECONDS);
 
         core.periodic(() -> POLL_WAIT, "jobPoller", (id) -> poll());
     }
