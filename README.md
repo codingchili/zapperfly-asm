@@ -3,17 +3,21 @@ Extra-simple clustered build servers for continuous integration. Minimal configu
 
 ![alt text](https://raw.githubusercontent.com/codingchili/zapperfly-asm/master/preview.png "Current snapshot version")
 
-# Building
-Build the distribution zip using
-```
-./gradlew archiveZip
-```
+# Installing
+
+Download the latest release from [releases](https://github.com/codingchili/zapperfly-asm/releases), unpack where you want to run it.
+
 To start it all up, run the following on each host.
 ```
 ./run start --group <groupName> --name <instanceName> --website <port, default 443>
 ```
 
-Optional commandline arguments
+If you want to build it yourself, clone this repository with git and run:
+```
+./gradlew archiveZip
+```
+
+Optional commandline arguments:
 
 --group: specifies the virtual group for the instances, different groups will not cluster together.
 
@@ -39,7 +43,7 @@ are required. An optimal installation experience should include no more than ins
 be packaged with a web interface. A very snazzy web interface, 2018-style web-components in action. 🐇
 
 # Makes use of
-This project will make use of chili-core, which means that vertx and hazelcast is on your classpath. What a boon!😵🌟
+This project makes use of chili-core, which means that vertx and hazelcast is on your classpath. What a boon!😵🌟
 
 # License
 The MIT License (MIT) Copyright (c) 2017 Robin Duda
@@ -47,4 +51,4 @@ The MIT License (MIT) Copyright (c) 2017 Robin Duda
 See: LICENSE.md
 
 # Contributing
-yes, please.
+yes, please. :smile_cat:  :cherry_blossom:
