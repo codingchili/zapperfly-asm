@@ -1,5 +1,5 @@
 # zapperfly-asm [![Build Status](https://travis-ci.org/codingchili/zapperfly-asm.svg?branch=master)](https://travis-ci.org/codingchili/zapperfly-asm)
-Extra-simple clustered build servers for continuous integration. Minimal configuration required, installation is as simple as starting a Java application.
+Extra-simple clustered build servers for continuous integration. Minimal configuration required, installation is as simple as starting a Java application. [Demo video!](https://www.youtube.com/watch?v=t4fKgGerj8I)
 
 ![alt text](https://raw.githubusercontent.com/codingchili/zapperfly-asm/master/preview.png "Current snapshot version")
 
