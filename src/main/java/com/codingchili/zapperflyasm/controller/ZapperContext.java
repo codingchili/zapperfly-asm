@@ -14,6 +14,7 @@ import com.codingchili.core.storage.AsyncStorage;
  */
 public class ZapperContext extends SystemContext {
     private DefaultConfigurationManager configurations;
+    private Authenticator authenticator;
     private BuildManager builds;
 
     /**
@@ -99,5 +100,16 @@ public class ZapperContext extends SystemContext {
      */
     public ConfigurationManager getConfigurationManager() {
         return configurations;
+    }
+
+    /**
+     * @return the authenticator responsible for adding users, signing tokens
+     * adding new users etc.
+     */
+    public Authenticator authenticator() {
+        if (authenticator == null) {
+            authenticator = new Authenticator(this);
+        }
+        return authenticator;
     }
 }

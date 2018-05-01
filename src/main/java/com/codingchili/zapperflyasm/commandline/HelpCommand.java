@@ -18,25 +18,20 @@ public class HelpCommand implements Command {
 
     @Override
     public void execute(Future<CommandResult> future, CommandExecutor executor) {
-        logger.log("Available commands");
+        logger.log("Available commands\n");
         executor.list().forEach(command -> {
-            logger.log(command.toString());
+            logger.log(command.getDescription() + "\n");
         });
         future.complete(CommandResult.SHUTDOWN);
     }
 
     @Override
     public String getDescription() {
-        return "lists available commands.";
+        return "--help lists available commands.";
     }
 
     @Override
     public String getName() {
         return "--help";
-    }
-
-    @Override
-    public String toString() {
-        return getName() + " " + getDescription();
     }
 }

@@ -1,13 +1,13 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.commandline.HelpCommand;
-import com.codingchili.zapperflyasm.commandline.StartCommand;
+import com.codingchili.zapperflyasm.commandline.*;
 import io.vertx.core.Future;
 
 import com.codingchili.core.Launcher;
 import com.codingchili.core.context.DefaultCommandExecutor;
 import com.codingchili.core.context.LaunchContext;
 import com.codingchili.core.listener.CoreService;
+import com.codingchili.core.protocol.RoleMap;
 
 import static com.codingchili.core.files.Configurations.*;
 
@@ -24,16 +24,18 @@ public class Service implements CoreService {
                 .setServices(1)
                 .setMetrics(false);
 
-        launcher().setVersion("1.0.2")
+        launcher().setVersion("1.0.3")
                 .setApplication("zapperfly-asm")
                 .deployable(Service.class)
+                .setWarnOnDefaultsLoaded(true)
                 .setClustered(true);
 
         LaunchContext context = new LaunchContext(args);
 
         context.setCommandExecutor(new DefaultCommandExecutor()
                 .add(new HelpCommand())
-                .add(new StartCommand()));
+                .add(new StartCommand())
+                .add(new AddUserCommand()));
 
         context.start();
     }

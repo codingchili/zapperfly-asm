@@ -4,13 +4,13 @@ import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.Future;
 
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import com.codingchili.core.configuration.Configurable;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.files.Configurations;
 import com.codingchili.core.protocol.Serializer;
+import com.codingchili.core.security.SecretFactory;
 import com.codingchili.core.storage.*;
 
 /**
@@ -23,17 +23,18 @@ import com.codingchili.core.storage.*;
  * but can go offline without interrupting any services.
  */
 public class ZapperConfig implements Configurable {
-    private static String PATH = "zapperfly.yaml";
-    private Map<String, User> users = new HashMap<>();
-    private String storage = HazelMap.class.getName();
+    private static String PATH = "./zapperfly.yaml";
+    private static Class<? extends AsyncStorage> storage = HazelMap.class;
+    private Set<User> users = new HashSet<>();
     private Integer timeoutSeconds = 300;
+    private String tokenSecret = SecretFactory.generate(48);
     private String buildPath = Paths.get("").toAbsolutePath().toString();
     private String dockerLine = "docker run -w /tmp/build -it -v '$directory:/tmp/build' --rm $image $script";
     private String groupName = "zapperfly-builds";
     private String windowsShell = "powershell.exe -Command";
     private String unixShell = "/bin/bash -E";
     private String instanceName = null;
-    private int capacity = 2;
+    private int capacity = 8;
 
     /**
      * Retrieves a storage implementation used to host objects of the given class.
@@ -47,7 +48,7 @@ public class ZapperConfig implements Configurable {
                                                                           Class<T> value) {
         Future<AsyncStorage<T>> future = Future.future();
         new StorageLoader<T>(core)
-                .withPlugin(get().getStorage())
+                .withPlugin(storage)
                 .withValue(value)
                 .withDB(value.getSimpleName())
                 .build(done -> {
@@ -61,16 +62,23 @@ public class ZapperConfig implements Configurable {
     }
 
     /**
+     * @param plugin the plugin used to store builds.
+     */
+    public static void setStoragePlugin(Class<? extends AsyncStorage> plugin) {
+        ZapperConfig.storage = plugin;
+    }
+
+    /**
      * @return a list of configured users.
      */
-    public Map<String, User> getUsers() {
+    public Set<User> getUsers() {
         return users;
     }
 
     /**
      * @param users a list of users.
      */
-    public void setUsers(Map<String, User> users) {
+    public void setUsers(Set<User> users) {
         this.users = users;
     }
 
@@ -112,13 +120,6 @@ public class ZapperConfig implements Configurable {
     }
 
     /**
-     * @return a class that implements AsyncStorage.
-     */
-    public String getStorage() {
-        return storage;
-    }
-
-    /**
      * @return the template string to use when starting docker builds.
      */
     public String getDockerLine() {
@@ -133,16 +134,15 @@ public class ZapperConfig implements Configurable {
     }
 
     /**
-     * @param storage the implementation to use for job and build configuration.
+     * @return the maximum number of concurrent builds supported.
      */
-    public void setStorage(String storage) {
-        this.storage = storage;
-    }
-
     public int getCapacity() {
         return capacity;
     }
 
+    /**
+     * @param capacity the number of concurrent builds.
+     */
     public void setCapacity(int capacity) {
         this.capacity = capacity;
     }
@@ -199,5 +199,19 @@ public class ZapperConfig implements Configurable {
      */
     public String getWindowsShell() {
         return windowsShell;
+    }
+
+    /**
+     * @return random bytes used for generating tokens.
+     */
+    public String getTokenSecret() {
+        return tokenSecret;
+    }
+
+    /**
+     * @param tokenSecret the secret to use when generating tokens.
+     */
+    public void setTokenSecret(String tokenSecret) {
+        this.tokenSecret = tokenSecret;
     }
 }

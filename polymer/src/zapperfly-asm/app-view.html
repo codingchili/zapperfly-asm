@@ -1,5 +1,4 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="build-queue.html">
 <link rel="import" href="build-stats.html">
 <link rel="import" href="build-view.html">
@@ -74,10 +73,6 @@
                     <build-executors id="executors"></build-executors>
                 </div>
 
-                <iron-ajax auto url="/api/?target=builds&route=list" handle-as="json"
-                           on-response="_onBuildsDownloaded" id="statusLoader" debounce-duration="300">
-                </iron-ajax>
-
                 <loading-spinner></loading-spinner>
             </div>
         </div>
@@ -90,23 +85,6 @@
 
         static get is() {
             return 'app-view';
-        }
-
-        constructor() {
-            super();
-
-            setInterval(() => {
-                this._load();
-            }, 2500);
-        }
-
-        _onBuildsDownloaded(event, request) {
-            this.builds = request.response.list;
-            this.$.builds.setBuilds(this.builds);
-        }
-
-        _load() {
-            this.$.statusLoader.generateRequest();
         }
     }
     window.customElements.define(AppView.is, AppView);

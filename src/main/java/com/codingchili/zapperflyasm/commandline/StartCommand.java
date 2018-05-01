@@ -61,7 +61,8 @@ public class StartCommand implements Command {
         List<Future> deployments = new ArrayList<>();
         MultiHandler api = new MultiHandler(
                 new BuildHandler(),
-                new ConfigurationHandler());
+                new ConfigurationHandler(),
+                new AuthenticationHandler());
 
         if (executor.hasProperty(WEBSITE)) {
             deployments.add(context.listener(() -> new Webserver(
@@ -83,7 +84,9 @@ public class StartCommand implements Command {
     }
 
     private void loadCapacity(CommandExecutor executor) {
-        config.setCapacity(Integer.parseInt(executor.getProperty(CAPACITY).orElse("2")));
+        config.setCapacity(Integer.parseInt(executor.getProperty(CAPACITY).orElse(
+                (ZapperConfig.get().getCapacity() + "")
+        )));
     }
 
     private void loadInstanceGroup(CommandExecutor executor) {
@@ -94,25 +97,20 @@ public class StartCommand implements Command {
         if (config.getInstanceName() == null) {
             config.setInstanceName(executor.getProperty(NAME)
                     .orElse(Environment.hostname()
-                            .orElse("zapperfly." +UUID.randomUUID().toString().split("-")[0])));
+                            .orElse("zapperfly." + UUID.randomUUID().toString().split("-")[0])));
         }
     }
 
     @Override
     public String getDescription() {
-        return "start " +
-                "\t\t--website starts with the website on the default port " + DEFAULT_PORT + "\n" +
+        return "--start starts the application with options" +
+                "\n\t\t--website starts with the website on the default port " + DEFAULT_PORT + "\n" +
                 "\t\t--name specifies the instance name.\n" +
                 "\t\t--group specifies the cluster grouping.";
     }
 
     @Override
     public String getName() {
-        return "start";
-    }
-
-    @Override
-    public String toString() {
-        return getDescription();
+        return "--start";
     }
 }

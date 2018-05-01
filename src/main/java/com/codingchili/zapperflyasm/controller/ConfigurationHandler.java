@@ -10,21 +10,24 @@ import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 
-import static com.codingchili.core.protocol.RoleMap.PUBLIC;
+import static com.codingchili.core.protocol.RoleMap.ADMIN;
+import static com.codingchili.core.protocol.RoleMap.USER;
 
 /**
  * @author Robin Duda
  * <p>
  * Handler for repo/branch configurations.
  */
-@Roles(PUBLIC)
+@Roles(ADMIN)
 @Address("config")
 public class ConfigurationHandler implements CoreHandler {
     private Protocol<Request> protocol = new Protocol<>(this);
     private ConfigurationManager configurations;
+    private ZapperContext core;
 
     @Override
     public void init(CoreContext core) {
+        this.core = ZapperContext.ensure(core);
         this.configurations = ZapperContext.ensure(core).getConfigurationManager();
     }
 
@@ -52,13 +55,13 @@ public class ConfigurationHandler implements CoreHandler {
         configurations.removeConfig(request.getRepository(), request.getBranch()).setHandler(request::result);
     }
 
-    @Api
+    @Api(USER)
     @Description("Lists available configurations.")
     public void list(ApiRequest request) {
         configurations.getAllConfigs().setHandler(request::result);
     }
 
-    @Api
+    @Api(USER)
     @Description("Lists the cluster configuration.")
     public void cluster(ApiRequest request) {
         request.write(ZapperConfig.get());
@@ -66,6 +69,7 @@ public class ConfigurationHandler implements CoreHandler {
 
     @Override
     public void handle(Request request) {
-        protocol.get(request.route()).submit(new ApiRequest(request));
+        protocol.get(request.route(), core.authenticator().getRoleByRequest(request))
+                .submit(new ApiRequest(request));
     }
 }

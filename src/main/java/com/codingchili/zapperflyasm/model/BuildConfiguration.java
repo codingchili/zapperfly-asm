@@ -14,7 +14,7 @@ import com.codingchili.core.storage.Storable;
  */
 public class BuildConfiguration implements Storable {
     private static final Pattern safe = Pattern.compile("[0-9A-Za-z-./_]+");
-    private static final Pattern urlsafe = Pattern.compile("htt(p|ps)://[A-Za-z/.-]+");
+    private static final Pattern urlsafe = Pattern.compile("(ssh|(htt(p|ps)))://[0-9A-Za-z/._:@-]+");
     private List<String> outputDirs = Arrays.asList("out", "build", "target");
     private boolean autoclean = false;
     private String dockerImage = "";

@@ -36,8 +36,8 @@ public class ZapperContextMock extends ZapperContext {
     public static Future<ZapperContextMock> create() {
         ZapperContextMock mock = new ZapperContextMock();
 
+        ZapperConfig.setStoragePlugin(JsonMap.class);
         ZapperConfig config = ZapperConfig.get();
-        config.setStorage(JsonMap.class.getName());
         config.setBuildPath("test/resources/");
         config.setTimeoutSeconds(3);
         config.setInstanceName(Environment.hostname().orElse("zap.instance.1"));

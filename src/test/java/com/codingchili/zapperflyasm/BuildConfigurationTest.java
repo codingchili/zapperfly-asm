@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * @author Robin Duda
@@ -46,8 +47,14 @@ public class BuildConfigurationTest {
     @Test
     public void allowedRepoUrls() {
         // example of legal repository url
-        config.setRepository("https://github.com/codingchili/zapperfly-asm.git");
-        config.sanitize();
+        Stream.of(
+                "https://github.com/codingchili/zapperfly-asm.git",
+                "http://github.com/codingchili/1gram.git",
+                "ssh://user:one@host.com/therepo.git"
+        ).forEach(url -> {
+            config.setRepository(url);
+            config.sanitize();
+        });
 
         assertThrows(config::setRepository, unsafeCommands);
     }

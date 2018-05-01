@@ -4,7 +4,7 @@ apply plugin: 'maven'
 apply plugin: 'java'
 apply plugin: 'idea'
 
-project.version = "1.0.2"
+project.version = "1.0.3"
 project.group = 'com.github.codingchili.zapperfly-asm'
 
 sourceCompatibility = 1.8
@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.github.codingchili.chili-core:core:1.0.32-SNAPSHOT@jar'
+    compile 'com.github.codingchili.chili-core:core:1.0.33-SNAPSHOT'
     testCompile 'io.vertx:vertx-unit:3.5.1'
     testCompile 'junit:junit:4.12'
 }
@@ -76,8 +76,8 @@ task archiveZip(type: Zip, dependsOn: [subprojects.jar, polymer]) {
 
     from('script') {
         fileMode = 0755
-        include '**/run.sh'
-        include '**/run.bat'
+        include '**/zapperfly.sh'
+        include '**/zapperfly.bat'
         expand(jar: jar.outputs.files[0].name, app: project.name, version: project.version)
     }
 

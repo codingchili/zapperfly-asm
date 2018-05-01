@@ -186,10 +186,8 @@
             </template>
         </div>
 
-        <iron-ajax auto id="executorsLoader" url="/api/?target=builds&route=instances"
-                   handle-as="json"
-                   on-response="_onExecutors" debounce-duration="300">
-        </iron-ajax>
+        <iron-ajax id="executorsLoader" url="/api/" method="post" handle-as="json"
+                   on-response="_onExecutors"></iron-ajax>
 
     </template>
 </dom-module>
@@ -200,13 +198,24 @@
             return 'build-executors';
         }
 
-        constructor() {
-            super();
+        ready() {
+            super.ready();
             this.started = false;
 
             setInterval(() => {
-                this.$.executorsLoader.generateRequest();
+                this._loadExecutors();
             }, 3000);
+
+            this._loadExecutors();
+        }
+
+        _loadExecutors() {
+            this.$.executorsLoader.body = JSON.stringify({
+                token: application.token,
+                target: 'builds',
+                route: 'instances'
+            });
+            this.$.executorsLoader.generateRequest();
         }
 
         _toDate(epochMS) {
@@ -227,5 +236,6 @@
             }
         }
     }
+
     window.customElements.define(BuildExecutors.is, BuildExecutors);
 </script>

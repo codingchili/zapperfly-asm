@@ -15,16 +15,15 @@ import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 
 import static com.codingchili.core.configuration.CoreStrings.throwableToString;
-import static com.codingchili.core.protocol.RoleMap.PUBLIC;
-import static com.codingchili.zapperflyasm.model.ApiRequest.ID_DIRECTORY;
-import static com.codingchili.zapperflyasm.model.ApiRequest.ID_LIST;
+import static com.codingchili.core.protocol.RoleMap.*;
+import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 
 /**
  * @author Robin Duda
  * <p>
  * HTTP REST API for retrieving build status, scheduling and configuring builds.
  */
-@Roles(PUBLIC)
+@Roles(USER)
 @Address("builds")
 @Description("Handles configuration and build requests.")
 @DataModel(ApiRequest.class)
@@ -39,7 +38,7 @@ public class BuildHandler implements CoreHandler {
         this.manager = context.getJobManager();
     }
 
-    @Api
+    @Api(PUBLIC)
     @Description("Schedules a new build on the given repo and branch.")
     public void submit(ApiRequest request) {
         context.getConfigurationManager().getConfig(request.getRepository(), request.getBranch())
@@ -64,7 +63,7 @@ public class BuildHandler implements CoreHandler {
         getJob(request, job -> manager.delete(job).setHandler(request::result));
     }
 
-    @Api
+    @Api(ADMIN)
     @Description("Clears the build history")
     public void clear(ApiRequest request) {
         manager.clear().setHandler(clear -> {
@@ -82,13 +81,13 @@ public class BuildHandler implements CoreHandler {
         manager.getLog(request.getBuildId(), request.getLogOffset()).setHandler(request::result);
     }
 
-    @Api
+    @Api(PUBLIC)
     @Description("Returns the build status for the given build ID without the build log.")
     public void status(ApiRequest request) {
         getJob(request, request::write);
     }
 
-    @Api
+    @Api(PUBLIC)
     public void queued(ApiRequest request) {
         manager.queued().setHandler(done -> {
             if (done.succeeded()) {
@@ -99,7 +98,7 @@ public class BuildHandler implements CoreHandler {
         });
     }
 
-    @Api
+    @Api(PUBLIC)
     @Description("Lists all builds that has been executed on the server.")
     public void list(ApiRequest request) {
         manager.history().setHandler(done -> {
@@ -131,7 +130,7 @@ public class BuildHandler implements CoreHandler {
         });
     }
 
-    @Api
+    @Api(PUBLIC)
     @Description("Lists all executors/instances that has joined the cluster at some point.")
     public void instances(ApiRequest request) {
         manager.instances().setHandler(request::result);
@@ -149,6 +148,7 @@ public class BuildHandler implements CoreHandler {
 
     @Override
     public void handle(Request request) {
-        protocol.get(request.route()).submit(new ApiRequest(request));
+        protocol.get(request.route(), context.authenticator().getRoleByRequest(request))
+                .submit(new ApiRequest(request));
     }
 }

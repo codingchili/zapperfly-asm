@@ -4,6 +4,7 @@
 <link rel="import" href="../../bower_components/paper-dialog-behavior/paper-dialog-behavior.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="build-view">
@@ -29,52 +30,52 @@
                 margin-right: 8px;
             }
 
-          #spinner {
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
-          }
+            #spinner {
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+            }
 
-          .history {
-            position: absolute;
-            margin-left: 6px;
-            margin-top: -2px;
-          }
+            .history {
+                position: absolute;
+                margin-left: 6px;
+                margin-top: -2px;
+            }
 
-          #spinner {
-            margin-top: 12px;
-          }
+            #spinner {
+                margin-top: 12px;
+            }
 
-          #logDialog {
-            position: fixed;
-            top: 0;
-            left: 0;
-            min-width: 80%;
-            right: 0;
-            margin-left: auto;
-            margin-right: auto;
-          }
+            #logDialog {
+                position: fixed;
+                top: 0;
+                left: 0;
+                min-width: 80%;
+                right: 0;
+                margin-left: auto;
+                margin-right: auto;
+            }
 
-          .line {
-            color: var(--primary-color);
-          }
+            .line {
+                color: var(--primary-color);
+            }
 
-          .date {
-            color: var(--secondary-color);
-          }
+            .date {
+                color: var(--secondary-color);
+            }
 
-          .text {
-            word-break: break-all;
-            white-space: pre-wrap;
-          }
+            .text {
+                word-break: break-all;
+                white-space: pre-wrap;
+            }
 
-          hr {
-            opacity: var(--opacity);
-          }
+            hr {
+                opacity: var(--opacity);
+            }
 
-          .empty {
-            opacity: var(--opacity);
-          }
+            .empty {
+                opacity: var(--opacity);
+            }
         </style>
 
         <h4>
@@ -84,15 +85,13 @@
                 <paper-spinner id="spinner" active></paper-spinner>
             </template>
 
-            <template is="dom-if" if="[[started]]">
+            <template is="dom-if" if="{{_canDelete(authenticated, started)}}">
                 <iron-icon on-click="_clear" class="history icon" icon="icons:clear"></iron-icon>
             </template>
         </h4>
 
         <template is="dom-repeat" items="{{builds}}" as="build">
-            <template is="dom-if" if="{{_show(build)}}">
-                <build-card on-click="_onClick" build="[[build]]"></build-card>
-            </template>
+            <build-card on-click="_onClick" build="[[build]]"></build-card>
         </template>
 
         <template is="dom-if" if="{{_isEmpty(builds)}}">
@@ -105,8 +104,8 @@
                 <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
 
                 <template is="dom-repeat" items="{{log}}" as="event">
-                        <span class="line">[{{_line()}}]</span>
-                        <span class="date">[[_toDate(event.time)]]</span>
+                    <span class="line">[{{_line()}}]</span>
+                    <span class="date">[[_toDate(event.time)]]</span>
                     <span class="text">[[_parseLine(event.line)]]</span>
                     <hr>
                 </template>
@@ -116,15 +115,12 @@
             </div>
         </paper-dialog>
 
-        <iron-ajax id="logLoader"
-                   url="/api/?target=builds&route=log&id=[[build.id]]&offset=[[offset]]"
-                   handle-as="json"
-                   on-response="_onBuildLog" debounce-duration="300">
-        </iron-ajax>
+        <paper-toast id="toast" text="[[errorText]]"></paper-toast>
 
-        <iron-ajax id="clearBuilds" url="/api/?target=builds&route=clear"
-                   handle-as="json" on-response="_onClear" debounce-duration="300">
-        </iron-ajax>
+        <iron-ajax id="logLoader" url="/api/" method="post" handle-as="json" on-response="_onBuildLog"></iron-ajax>
+        <iron-ajax id="clearBuilds" url="/api/" method="post" handle-as="json" on-response="_onClear"></iron-ajax>
+        <iron-ajax id="statusLoader" url="/api/" method="post" handle-as="json"
+                   on-response="_onBuildsDownloaded"></iron-ajax>
 
     </template>
 </dom-module>
@@ -143,33 +139,64 @@
             super();
             this.LOG_POLL = 2500;
             this.started = false;
+            this.authenticated = false;
             this.build = null;
             this.builds = [];
             this.log = [];
+
+            application.onAuthenticated(() => {
+                this.authenticated = true;
+            });
+
+            application.onLogout(() => {
+                this.authenticated = false;
+            });
+        }
+
+        ready() {
+            super.ready();
 
             setInterval(() => {
                 if (this.build != null) {
                     this._reload();
                 }
             }, this.LOG_POLL);
+
+            setInterval(() => {
+                this._load();
+            }, 2500);
+            this._load();
+        }
+
+        _canDelete() {
+            return this.started && application.role('admin');
         }
 
         _onClear(event, request) {
             this.builds = request.response.list;
         }
 
-        setBuilds(builds) {
+        _onBuildsDownloaded(event, request) {
             this.started = true;
-            this.builds = builds;
+            this.builds = request.response.list;
 
             // update the build information after opening the log.
-            if (this.build != null) {
-                for (let i in builds) {
-                    if (builds[i].id === this.build.id) {
-                        this.build = builds[i];
+            if (this.build != null && this.builds) {
+                for (let i in this.builds) {
+                    if (this.builds[i].id === this.build.id) {
+                        this.build = this.builds[i];
                     }
                 }
             }
+        }
+
+        _load() {
+            this.$.statusLoader.body = JSON.stringify({
+                token: application.token,
+                target: 'builds',
+                route: 'list'
+            });
+            this.$.statusLoader.generateRequest();
         }
 
         _parseLine(line) {
@@ -181,13 +208,22 @@
         }
 
         _onClick(e) {
-            this.loading = true;
-            this.line = 0;
-            this.offset = 0;
-            this.build = e.model.build;
-            this.log = [];
-            this.$.logDialog.open();
-            this._reload();
+            if (this._canViewLog()) {
+                this.loading = true;
+                this.line = 0;
+                this.offset = 0;
+                this.build = e.model.build;
+                this.log = [];
+                this.$.logDialog.open();
+                this._reload();
+            } else {
+                this.errorText = "You are not authorized to view the log.";
+                this.$.toast.show();
+            }
+        }
+
+        _canViewLog() {
+            return this.started && (application.role('user') || application.role('admin'));
         }
 
         _toDate(epochMS) {
@@ -217,7 +253,7 @@
             }
 
             if (events.length > 0) {
-                this.offset = events[events.length -1].time;
+                this.offset = events[events.length - 1].time;
             }
             this.loading = false;
         }
@@ -231,15 +267,23 @@
         }
 
         _clear() {
+            this.$.clearBuilds.body = JSON.stringify({
+                token: application.token,
+                target: 'builds',
+                route: 'clear'
+            });
             this.$.clearBuilds.generateRequest();
         }
 
         _reload() {
+            this.$.logLoader.body = JSON.stringify({
+                token: application.token,
+                id: this.build.id,
+                offset: this.offset,
+                target: 'builds',
+                route: 'log'
+            });
             this.$.logLoader.generateRequest();
-        }
-
-        _show(build) {
-            return (build.progress != 'QUEUED')
         }
 
         _line() {
@@ -250,6 +294,7 @@
             this.build = null;
         }
     }
+
     window.customElements.define(BuildView.is, BuildView);
 
 

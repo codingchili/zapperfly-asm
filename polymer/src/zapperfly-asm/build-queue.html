@@ -31,10 +31,10 @@
                 margin-right: 6px;
             }
 
-           .title {
+            .title {
                 text-align: center;
                 display: block;
-           }
+            }
 
             .build {
                 cursor: pointer;
@@ -53,17 +53,17 @@
                 margin-bottom: 4px;
                 opacity: 0.85;
                 display: flex;
-                flex-direction: row;
+                flex-direction: row-reverse;
                 justify-content: space-between;
                 transition: border-color 0.2s;
                 border-style: groove;
                 border-width: 1px;
-                border-color: rgba(255,255,255,0.2);
+                border-color: rgba(255, 255, 255, 0.2);
                 box-sizing: border-box;
             }
 
             .configuration:hover {
-                border-color: rgba(255,255,255,0.4);
+                border-color: rgba(255, 255, 255, 0.4);
             }
 
             .branch {
@@ -99,10 +99,6 @@
                 min-height: 176px;
             }
 
-            paper-button {
-                margin-top: 22px;
-            }
-
             .new {
                 margin-top: 12px;
                 display: block;
@@ -125,7 +121,7 @@
                     <paper-spinner id="spinner" active></paper-spinner>
                 </template>
 
-                <template is="dom-if" if="[[started]]">
+                <template is="dom-if" if="{{_isQueueAvailable(started, authenticated)}}">
                     <iron-icon on-click="_start" class="build icon" icon="av:play-circle-outline"></iron-icon>
                 </template>
             </h4>
@@ -136,19 +132,25 @@
             <paper-dialog-scrollable>
 
                 <div class="dialog-content">
-
                     <template is="dom-if" if="{{!_saveable(editing, creating)}}">
                         <div class="description">Select a configuration to schedule a build.</div>
                         <template is="dom-repeat" items="{{configurations}}" as="configuration">
                             <paper-item class="configuration">
-                                <iron-icon on-click="_edit" class="icon" icon="icons:settings"></iron-icon>
+
+                                <!-- only admins may edit configuration. -->
+                                <template is="dom-if" if="{{_isAdmin(authenticated)}}">
+                                    <iron-icon on-click="_edit" class="icon" icon="icons:settings"></iron-icon>
+                                </template>
                                 <span class="branch">[[configuration.branch]]</span>
                                 <span class="repository">[[_trimRepo(configuration.repository)]]</span>
                                 <iron-icon on-click="_schedule" class="icon" icon="av:play-circle-outline"></iron-icon>
                             </paper-item>
                         </template>
 
-                        <a href="#" class="new" on-click="_new">new</a>
+                        <!-- only admins may create new build jobs. -->
+                        <template is="dom-if" if="{{_isAdmin(authenticated)}}">
+                            <a href="#" class="new" on-click="_new">new</a>
+                        </template>
                     </template>
 
                     <template is="dom-if" if="{{_saveable(editing, creating)}}">
@@ -159,7 +161,7 @@
                             <paper-input-container>
                                 <label slot="label">repository</label>
                                 <iron-input autofocus slot="input" bind-value="{{config.repository}}">
-                                    <input>
+                                    <input autofocus>
                                 </iron-input>
                             </paper-input-container>
 
@@ -187,7 +189,9 @@
                             <!-- enable this when artifact download is implemented. -->
                             <!--<tag-input label="output directories" value="{{tagtext}}" values="{{config.outputDirs}}"></tag-input>-->
                         </div>
-                        <paper-checkbox style="text-align: center;" checked="{{config.autoclean}}" class="picker">Auto cleanup</paper-checkbox>
+                        <paper-checkbox style="text-align: center;" checked="{{config.autoclean}}" class="picker">Auto
+                            cleanup
+                        </paper-checkbox>
                         <!-- prevents the contents from overflowing and showing the scrollbar when the checkbox is ticked -->
                         <hr style="visibility: hidden;">
                     </template>
@@ -210,7 +214,7 @@
         </paper-dialog>
 
         <template is="dom-repeat" items="[[builds]]" as="build">
-                <build-card build="[[build]]"></build-card>
+            <build-card build="[[build]]"></build-card>
         </template>
 
         <template is="dom-if" if="{{_isEmpty(builds)}}">
@@ -219,28 +223,11 @@
 
         <paper-toast id="toast" text="[[errorText]]"></paper-toast>
 
-        <iron-ajax auto id="configurationLoader" url="/api/?target=config&route=list"
-                   handle-as="json"
-                   on-response="_onConfiguration" debounce-duration="300">
-        </iron-ajax>
-
-        <iron-ajax id="buildScheduler"
-                   url="/api/?target=builds&route=submit&branch=[[branch]]&repository=[[repository]]"
-                   handle-as="json" on-response="_onQueued" debounce-duration="300">
-        </iron-ajax>
-
-        <iron-ajax id="loadQueue" method="post" url="/api/?target=builds&route=queued"
-                   handle-as="json" on-response="_onBuilds" debounce-duration="300" auto>
-        </iron-ajax>
-
-        <iron-ajax id="updateConfig" method="post" url="/api/"
-                   handle-as="json" on-response="_onUpdated" debounce-duration="300">
-        </iron-ajax>
-
-        <iron-ajax id="deleteConfig"
-                   url="/api/?target=config&route=remove&branch=[[branch]]&repository=[[repository]]"
-                   handle-as="json" on-response="_onDelete" debounce-duration="300">
-        </iron-ajax>
+        <iron-ajax id="configurationLoader" method="post" url="/api/" handle-as="json" on-response="_onConfiguration"></iron-ajax>
+        <iron-ajax id="buildScheduler" method="post" url="/api/" handle-as="json" on-response="_onQueued"></iron-ajax>
+        <iron-ajax id="loadQueue" method="post" url="/api/" handle-as="json" on-response="_onBuilds" auto></iron-ajax>
+        <iron-ajax id="updateConfig" method="post" url="/api/" handle-as="json" on-response="_onUpdated"></iron-ajax>
+        <iron-ajax id="deleteConfig" method="post" url="/api/" handle-as="json" on-response="_onDelete"></iron-ajax>
     </template>
 </dom-module>
 <script>
@@ -256,15 +243,47 @@
             this.started = false;
             this.editing = false;
             this.creating = false;
+            this.authenticated = false;
 
+            application.onAuthenticated(() => {
+                this.authenticated = true;
+            });
+
+            application.onLogout(() => {
+                this.authenticated = false;
+            });
+        }
+
+        ready() {
+            super.ready();
             setInterval(() => {
-                this.$.loadQueue.generateRequest();
+                this._loadQueue();
             }, 2500);
+            this._loadQueue();
+        }
+
+        _loadQueue() {
+            this.$.loadQueue.body = JSON.stringify({
+                token: application.token,
+                target: 'builds',
+                route: 'queued'
+            });
+            this.$.loadQueue.generateRequest();
         }
 
         _onBuilds(event, request) {
             this.started = true;
-            this.set('builds', request.response.list);
+            if (request.response.list) {
+                this.set('builds', request.response.list);
+            }
+        }
+
+        _isQueueAvailable() {
+            return this.started && this.authenticated;
+        }
+
+        _isAdmin() {
+            return application.role('admin');
         }
 
         _saveable(editing, creating) {
@@ -278,6 +297,11 @@
         _start() {
             this.editing = false;
             this.creating = false;
+            this.$.configurationLoader.body = JSON.stringify({
+                token: application.token,
+                target: 'config',
+                route: 'list'
+            });
             this.$.configurationLoader.generateRequest();
             this.$.queue.open();
         }
@@ -290,6 +314,13 @@
         }
 
         _delete() {
+            this.$.deleteConfig.body = JSON.stringify({
+                token: application.token,
+                branch: this.branch,
+                repository: this.repository,
+                target: 'config',
+                route: 'remove'
+            });
             this.$.deleteConfig.generateRequest();
         }
 
@@ -314,8 +345,13 @@
         }
 
         _save() {
-            let json = JSON.stringify({'config': this.config, 'route': 'add', 'target': 'config'});
-            this.$.updateConfig.body = json;
+            this.$.updateConfig.body = JSON.stringify({
+                    token: application.token,
+                    config: this.config,
+                    route: 'add',
+                    target: 'config'
+                }
+            );
             this.$.updateConfig.generateRequest();
         }
 
@@ -337,6 +373,14 @@
             let config = e.model.configuration;
             this.branch = config.branch;
             this.repository = config.repository;
+            this.$.buildScheduler.body = JSON.stringify({
+                token: application.token,
+                branch: this.branch,
+                repository: this.repository,
+                target: 'builds',
+                route: 'submit'
+            });
+
             this.$.buildScheduler.generateRequest();
             this.$.queue.close();
         }
@@ -349,12 +393,15 @@
         }
 
         _onConfiguration(event, request) {
-            this.configurations = request.response.collection;
-            this.set('configurations', request.response.collection);
-            this.notifySplices('configurations');
-            this.notifyPath('configurations');
+            if (request.response.collection) {
+                this.configurations = request.response.collection;
+                this.set('configurations', request.response.collection);
+                this.notifySplices('configurations');
+                this.notifyPath('configurations');
+            }
         }
     }
+
     window.customElements.define(BuildQueue.is, BuildQueue);
 
 

@@ -1,5 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="build-card.html">
@@ -64,36 +65,130 @@
                 margin-left: 6px;
             }
 
+            li {
+                text-align: left;
+            }
+
         </style>
 
         <paper-card elevation="1">
-            <h4>Zapperfly build server 1.0.0</h4>
+            <h4>Zapperfly build server 1.0.3</h4>
 
             <span class="joke">[[joke]]</span>
             <span class="date">[[time]]</span>
 
             <div class="config">
-                <iron-icon on-click="_configure" class="icon" icon="icons:settings"></iron-icon>
+                <template is="dom-if" if="[[authenticated]]">
+                    <iron-icon on-click="_configure" class="icon" icon="icons:settings"></iron-icon>
+                </template>
+                <template is="dom-if" if="[[!authenticated]]">
+                    <iron-icon on-click="_loginDialog" class="icon" icon="icons:power-settings-new"></iron-icon>
+                </template>
                 <iron-icon on-click="_about" class="icon" icon="icons:info-outline"></iron-icon>
             </div>
 
         </paper-card>
 
         <paper-dialog id="about" with-backdrop>
-            <a target="_blank" href="https://github.com/codingchili/zapperfly-asm"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+            <a target="_blank" href="https://github.com/codingchili/zapperfly-asm"><img
+                    style="position: absolute; top: 0; right: 0; border: 0;"
+                    src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"
+                    alt="Fork me on GitHub"></a>
             <h2>About</h2>
             <paper-dialog-scrollable style="margin-top:64px;">
 
-                <p>Zapperfly-asm is a clustered build server with minimal setup!</p>
+                <p>
+                    Zapperfly-asm is a clustered build server with minimal setup!
+                    Zapperfly is developed by Robin Duda, open source and available on github.
+                </p>
 
-                <p>Zapperfly is developed by Robin Duda, open source and available on github.</p>
+                <hr>
+                CHANGELOG
+                <br>
+
+                1.0.3
+                <ul>
+                    <li>login dialog and logout button.</li>
+                    <li>role based access control: read/start/configure.</li>
+                    <li>commandline to add new users to a running system.</li>
+                    <li>allow cloning with ssh and using basic authentication in repo url.</li>
+                    <li>added this changelog to the about dialog.</li>
+                    <li>adjusted the size of buttons to be more appealing.</li>
+                    <li>renamed the startup script from run -> zapperfly to avoid "run --start".</li>
+                </ul>
+
+                <hr>
+                1.0.2
+                <ul>
+                    <li>now support for building in containers!</li>
+                    <li>use a hazelcast queue to schedule builds over the cluster.</li>
+                    <li>use a hazelcast list to store builds logs.</li>
+                    <li>added input validation for build configuration.</li>
+                    <li>split the queue list API from the build list API.</li>
+                    <li>support newline in logs and improved grouping of log messages.</li>
+                    <li>support building without passing the buildscript over the shell (uses a file for docker builds)</li>
+                    <li>fixed - full build output was not captured.</li>
+                </ul>
+                <hr>
+                1.0.1
+                <ul>
+                    <li>added a distributed hazelcast semaphore used when taking jobs from the queue.</li>
+                    <li>mark all builds attached to an instance as failed if the owning instance goes down.</li>
+                    <li>show executors cpu/memory usage and "last seen" when instance goes offline.</li>
+                    <li>improved API latency worst case scenario from 250ms -> 5ms. (cluster routing)</li>
+                    <li>added the ability to remove builds that are no longer running from history.</li>
+                    <li>refactored the API into 'builds' and 'configuration'.</li>
+                    <li>improved the UI, new color theme, various fixes and improvements including mobile/PWA</li>
+                    <li>fixed an issue with autoclean not deleting readonly files: now adds write before deleting.</li>
+                    <li>fixed styling issues with paper-input and black text.</li>
+                    <li>fixed styling issues with paper-dialogs, the build log and checkboxes..</li>
+                </ul>
+                <hr>
+                1.0.0
+                <ul>
+                    <li>schedule builds across the cluster (clone + build)</li>
+                    <li>website (run with --website param) and API.</li>
+                    <li>real-time logging output on the website.</li>
+                    <li>support for setting instance capacity and name.</li>
+                    <li>support for grouping instances with --group parameter.</li>
+                    <li>configure builds by git repository url and branches.</li>
+                    <li>clustered build data and logs.</li>
+                    <li>full mobile support and may be added to homescreen as a progressive web app.</li>
+                </ul>
+
             </paper-dialog-scrollable>
             <div class="buttons">
                 <paper-button raised dialog-dismiss>Close</paper-button>
             </div>
         </paper-dialog>
 
+        <paper-dialog id="login" with-backdrop>
+            <h2>Login</h2>
+            <paper-dialog-scrollable>
+
+                <paper-input-container>
+                    <label slot="label">username</label>
+                    <iron-input slot="input" on-keydown="_submitLogin" bind-value="{{username}}">
+                        <input autofocus>
+                    </iron-input>
+                </paper-input-container>
+
+                <paper-input-container>
+                    <label slot="label">password</label>
+                    <iron-input slot="input" on-keydown="_submitLogin" bind-value="{{password}}">
+                        <input type="password">
+                    </iron-input>
+                </paper-input-container>
+
+            </paper-dialog-scrollable>
+            <div class="buttons">
+                <paper-button raised on-click="_login">Login</paper-button>
+            </div>
+        </paper-dialog>
+
+
         <paper-dialog id="configure" with-backdrop>
+            <iron-icon on-click="_logout" class="icon" icon="icons:power-settings-new"></iron-icon>
             <h2>Configuration</h2>
             <paper-dialog-scrollable>
 
@@ -103,6 +198,14 @@
                     <tr>
                         <th>Key</th>
                         <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>User name</td>
+                        <td>[[user]]</td>
+                    </tr>
+                    <tr>
+                        <td>User role</td>
+                        <td>[[role]]</td>
                     </tr>
                     <tr>
                         <td>Cluster group</td>
@@ -120,10 +223,6 @@
                         <td>Build path</td>
                         <td>[[config.buildPath]]</td>
                     </tr>
-                    <tr>
-                        <td>Storage plugin</td>
-                        <td>[[config.storage]]</td>
-                    </tr>
                 </table>
             </paper-dialog-scrollable>
             <div class="buttons">
@@ -132,12 +231,20 @@
         </paper-dialog>
 
         <iron-ajax auto id="jokeLoader" url="https://api.icndb.com/jokes/random?limitTo=[nerdy]" handle-as="json"
-                   on-response="_onJokes" debounce-duration="300">
+                   on-response="_onJokes">
         </iron-ajax>
 
-        <iron-ajax id="configLoader" url="/api/?target=config&route=cluster" handle-as="json"
+        <iron-ajax id="configLoader" method="post" url="/api/" handle-as="json"
                    on-response="_onConfig" debounce-duration="300">
         </iron-ajax>
+
+        <iron-ajax id="loginRequest"
+                   url="/api/?target=authentication&route=login&username=[[username]]&password=[[password]]"
+                   handle-as="json"
+                   on-response="_onLogin">
+        </iron-ajax>
+
+        <paper-toast id="toast" text="[[errorText]]"></paper-toast>
 
     </template>
 </dom-module>
@@ -150,6 +257,10 @@
 
         constructor() {
             super();
+
+            this.username = '';
+            this.password = '';
+            this.authenticated = false;
 
             this._updateTime();
             setInterval(() => {
@@ -165,7 +276,47 @@
             this.$.about.open();
         }
 
+        _logout() {
+            this.authenticated = false;
+            this.$.configure.close();
+            application.logout();
+        }
+
+        _loginDialog() {
+            this.$.login.open();
+        }
+
+        _login() {
+            this.$.loginRequest.generateRequest();
+        }
+
+        _submitLogin(e) {
+            console.log(e);
+            if (e.keyCode === 13) {
+                this._login();
+            }
+        }
+
+        _onLogin(event, request) {
+            if (request.response.status === ACCEPTED) {
+                application.authenticated(request.response);
+                this.authenticated = true;
+                this.user = application.token.domain;
+                this.role = application.token.properties['role'];
+                this.$.login.close();
+            } else {
+                this.password = '';
+                this.errorText = request.response.message;
+                this.$.toast.open();
+            }
+        }
+
         _configure() {
+            this.$.configLoader.body = JSON.stringify({
+                token: application.token,
+                target: 'config',
+                route: 'cluster'
+            });
             this.$.configLoader.generateRequest();
             this.$.configure.open();
         }
@@ -182,14 +333,8 @@
             this.config = request.response;
         }
     }
+
     window.customElements.define(BuildStats.is, BuildStats);
-
-
-
-
-
-
-
 
 
 </script>
