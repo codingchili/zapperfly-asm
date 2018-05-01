@@ -7,17 +7,25 @@ Extra-simple clustered build servers for continuous integration. Minimal configu
 
 Download the latest release from [releases](https://github.com/codingchili/zapperfly-asm/releases), unpack where you want to run it.
 
-To start it all up, run the following on each host.
+##### To save the default configuration to file (optional)
 ```
-./run start --group <groupName> --name <instanceName> --website <port, default 443>
-```
-
-If you want to build it yourself, clone this repository with git and run:
-```
-./gradlew archiveZip
+./zapperfly --configure
 ```
 
-Optional commandline arguments:
+##### Add users with the following command.
+```
+./zapperfly --user --name <userName> --pass <userPassword> --role <admin|user>
+```
+
+--pass: if omitted a random password will be generated.
+
+--role: if omitted the role will default to 'user'.
+
+
+##### To start it all up, run the following on each host.
+```
+./zapperfly --start --group <groupName> --name <instanceName> --website <port, default 443>
+```
 
 --group: specifies the virtual group for the instances, different groups will not cluster together.
 
@@ -25,16 +33,27 @@ Optional commandline arguments:
 
 --website: starts the graphical user interface on port 443, or the specified port.
 
+##### If you want to build it yourself, clone this repository with git and run:
+```
+./gradlew archiveZip
+```
+
 # Features 😎
 - build scheduling over multiple hosts
 - real time log monitoring
 - running builds in docker containers.
 - tune workload per instance based on number of parallel builds.
-- downloading of build artifacts (TBD)
-- support for simple authentication (TBD)
+- support for role-base authentication
+- downloading of build artifacts (TBD - for now include the distribution in the build script.)
+
+There are three levels of authorization,
+
+- admin: may add build configurations and edit existing. (is also an user)
+- user: may view build logs and start builds.
+- public: may view the build queue and build history - no build logs.
 
 Features not implemented 😐
-- enterprise-xml-annotations-headache-complexity generator.
+- bugs.
 
 # Background
 Build servers are often hard to setup and involves some serious configuration overhead. The purpose of the zapperfly assembly server is 
@@ -46,7 +65,7 @@ be packaged with a web interface. A very snazzy web interface, 2018-style web-co
 This project makes use of chili-core, which means that vertx and hazelcast is on your classpath. What a boon!😵🌟
 
 # License
-The MIT License (MIT) Copyright (c) 2017 Robin Duda
+The MIT License (MIT) Copyright (c) 2018 Robin Duda
 
 See: LICENSE.md
 

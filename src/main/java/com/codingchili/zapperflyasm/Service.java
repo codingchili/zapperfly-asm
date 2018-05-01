@@ -34,6 +34,7 @@ public class Service implements CoreService {
 
         context.setCommandExecutor(new DefaultCommandExecutor()
                 .add(new HelpCommand())
+                .add(new ConfigureCommand())
                 .add(new StartCommand())
                 .add(new AddUserCommand()));
 

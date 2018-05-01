@@ -29,7 +29,7 @@ public class ZapperConfig implements Configurable {
     private Integer timeoutSeconds = 300;
     private String tokenSecret = SecretFactory.generate(48);
     private String buildPath = Paths.get("").toAbsolutePath().toString();
-    private String dockerLine = "docker run -w /tmp/build -it -v '$directory:/tmp/build' --rm $image $script";
+    private String dockerLine = "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm $image /tmp/build/$script";
     private String groupName = "zapperfly-builds";
     private String windowsShell = "powershell.exe -Command";
     private String unixShell = "/bin/bash -E";
