@@ -17,15 +17,16 @@ import com.codingchili.core.security.*;
  * Handles authentication.
  */
 public class Authenticator {
-    private TokenFactory factory = new TokenFactory(ZapperConfig.get().getTokenSecret().getBytes());
     private static final String ID_ROLE = "role";
-    private HashFactory hashes;
+    private TokenFactory factory;
+    private HashFactory hasher;
 
     /**
      * @param core creates a new authenticator on the given core context.
      */
     public Authenticator(CoreContext core) {
-        this.hashes = new HashFactory(core);
+        this.hasher = core.hasher();
+        this.factory = core.tokens(ZapperConfig.get().getTokenSecret().getBytes());
     }
 
     /**
@@ -72,7 +73,7 @@ public class Authenticator {
      */
     public Future<Void> verifyPassword(User user, String password) {
         Future<Void> future = Future.future();
-        hashes.verify(future, user.getPassword(), password);
+        hasher.verify(future, user.getPassword(), password);
         return future;
     }
 

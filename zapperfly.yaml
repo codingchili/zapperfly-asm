@@ -6,7 +6,8 @@ users:
 timeoutSeconds: 300
 tokenSecret: "5ieoj2+huRF1vedTkotXQPZgSh8N5VbiWwLbfVYSVJrfPdmQA5uiqwQrjbOMFpC3"
 buildPath: "C:\\Users\\chili\\Documents\\zapperfly-asm"
-dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm $image /tmp/build/$script"
+dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm\
+  \ $image /tmp/build/$script"
 groupName: "zapperfly-builds"
 windowsShell: "powershell.exe -Command"
 unixShell: "/bin/bash -E"
