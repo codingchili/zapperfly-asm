@@ -5,7 +5,7 @@ users:
   password: "$argon2i$v=19$m=8192,t=1,p=4$4t4QTEiYOlxxnrzjFxW9eQ$0l2V2G9Z9FBbqcBXg0Y/4NOiqqqQlmWeIQ85U4/kjaI"
 timeoutSeconds: 300
 tokenSecret: "5ieoj2+huRF1vedTkotXQPZgSh8N5VbiWwLbfVYSVJrfPdmQA5uiqwQrjbOMFpC3"
-buildPath: "C:\\Users\\chili\\Documents\\zapperfly-asm"
+buildPath: "builds/"
 dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm\
   \ $image /tmp/build/$script"
 groupName: "zapperfly-builds"
