@@ -223,11 +223,11 @@
 
         <paper-toast id="toast" text="[[errorText]]"></paper-toast>
 
-        <iron-ajax id="configurationLoader" method="post" url="/api/" handle-as="json" on-response="_onConfiguration"></iron-ajax>
-        <iron-ajax id="buildScheduler" method="post" url="/api/" handle-as="json" on-response="_onQueued"></iron-ajax>
-        <iron-ajax id="loadQueue" method="post" url="/api/" handle-as="json" on-response="_onBuilds" auto></iron-ajax>
-        <iron-ajax id="updateConfig" method="post" url="/api/" handle-as="json" on-response="_onUpdated"></iron-ajax>
-        <iron-ajax id="deleteConfig" method="post" url="/api/" handle-as="json" on-response="_onDelete"></iron-ajax>
+        <iron-ajax id="configurationLoader" method="POST" url="/api/" handle-as="json" on-response="_onConfiguration"></iron-ajax>
+        <iron-ajax id="buildScheduler" method="POST" url="/api/" handle-as="json" on-response="_onQueued"></iron-ajax>
+        <iron-ajax id="loadQueue" method="POST" url="/api/" handle-as="json" on-response="_onBuilds" auto></iron-ajax>
+        <iron-ajax id="updateConfig" method="POST"  url="/api/" handle-as="json" on-response="_onUpdated" content-type="application/json"></iron-ajax>
+        <iron-ajax id="deleteConfig" method="POST" url="/api/" handle-as="json" on-response="_onDelete"></iron-ajax>
     </template>
 </dom-module>
 <script>
@@ -345,13 +345,12 @@
         }
 
         _save() {
-            this.$.updateConfig.body = JSON.stringify({
+            this.$.updateConfig.body = {
                     token: application.token,
                     config: this.config,
                     route: 'add',
                     target: 'config'
-                }
-            );
+                };
             this.$.updateConfig.generateRequest();
         }
 
@@ -403,6 +402,7 @@
     }
 
     window.customElements.define(BuildQueue.is, BuildQueue);
+
 
 
 </script>
