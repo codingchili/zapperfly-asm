@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.github.codingchili.chili-core:core:1.0.36-SNAPSHOT'
+    compile 'com.github.codingchili.chili-core:core:master-SNAPSHOT'
     testCompile 'io.vertx:vertx-unit:3.5.1'
     testCompile 'junit:junit:4.12'
 }
