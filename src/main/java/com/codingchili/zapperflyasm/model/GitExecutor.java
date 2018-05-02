@@ -96,7 +96,7 @@ public class GitExecutor implements VersionControlSystem {
 
     private String getCloneCommand(BuildJob job) {
         BuildConfiguration config = job.getConfig();
-        return String.format("git clone -b %s %s %s --depth 5",
+        return String.format("git clone -b %s %s %s --depth 1",
                 config.getBranch(),
                 config.getRepository(),
                 job.getDirectory());
