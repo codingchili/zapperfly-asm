@@ -40,12 +40,12 @@ public class ApiRequest implements RequestWrapper {
      * @return the line number offset for log data to be returned.
      */
     public Long getLogOffset() {
-        Integer offset = data().getInteger(ID_OFFSET);
+        Long offset = data().getLong(ID_OFFSET);
 
         if (offset == null) {
             return 0L;
         } else {
-            return new Long(offset);
+            return offset;
         }
     }
 
