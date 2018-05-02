@@ -34,7 +34,7 @@ public class ZapperConfig implements Configurable {
     private String windowsShell = "powershell.exe -Command";
     private String unixShell = "/bin/bash -E";
     private String instanceName = null;
-    private int capacity = 8;
+    private int capacity = 2;
 
     /**
      * Retrieves a storage implementation used to host objects of the given class.

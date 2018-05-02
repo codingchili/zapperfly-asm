@@ -8,5 +8,5 @@ dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build'
 groupName: "zapperfly-builds"
 windowsShell: "powershell.exe -Command"
 unixShell: "/bin/bash -E"
-instanceName: "chili.x2"
+instanceName:
 capacity: 2
