@@ -38,9 +38,31 @@ Download the latest release from [releases](https://github.com/codingchili/zappe
 ./gradlew archiveZip
 ```
 
+# Run with docker
+
+Run the following command to build the docker image
+
+```
+gradlew archiveZip && docker build -f Dockerfile build/distributions
+```
+
+Running the container
+```
+docker run -it -p 5701:5701 -e ZAPPER_PWD=secret <image-id>
+```
+
+-p is optional, required for clustering. increase the first port in the pair
+for each container.
+
+-e is optional, ZAPPER_PWD is the password of the 'root' user. if unset
+the default password is blank.
+
+Once the container is started the web interface is available on https://<container-ip>/.
+
 # Features 😎
 - build scheduling over multiple hosts
 - real time log monitoring
+- running the build sersver in a docker container.
 - running builds in docker containers.
 - tune workload per instance based on number of parallel builds.
 - support for role-base authentication
