@@ -3,7 +3,7 @@ FROM alpine:3.7
 MAINTAINER codingchili@github
 
 # make sure to run 'gradlew build' before building the container.
-# example: 'gradlew build && docker build build/distributions'
+# example: 'gradlew build && docker build -f ./Dockerfile build/distributions'
 # set environment ZAPPER_PWD when running the container to set a password for the root user.
 # default login is root and empty password.
 

@@ -1,6 +1,8 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.model.*;
+import com.codingchili.zapperflyasm.model.BuildJob;
+import com.codingchili.zapperflyasm.vcs.GitExecutor;
+import com.codingchili.zapperflyasm.vcs.VersionControlSystem;
 import io.vertx.core.Future;
 
 import java.util.List;

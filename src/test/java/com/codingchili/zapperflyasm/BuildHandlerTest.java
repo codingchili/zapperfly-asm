@@ -1,7 +1,10 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.BuildHandler;
+import com.codingchili.zapperflyasm.handler.BuildHandler;
 import com.codingchili.zapperflyasm.model.*;
+import com.codingchili.zapperflyasm.model.BuildJob;
+import com.codingchili.zapperflyasm.model.BuildConfiguration;
+import com.codingchili.zapperflyasm.logging.LogEvent;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;

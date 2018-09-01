@@ -1,7 +1,8 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.codingchili.zapperflyasm.model.*;
+import com.codingchili.zapperflyasm.vcs.GitExecutor;
+import com.codingchili.zapperflyasm.vcs.VersionControlSystem;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.unit.TestContext;

@@ -1,7 +1,7 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.model.LogEvent;
-import com.codingchili.zapperflyasm.model.LogStore;
+import com.codingchili.zapperflyasm.logging.LogEvent;
+import com.codingchili.zapperflyasm.logging.LogStore;
 import io.vertx.core.Future;
 
 import java.util.*;

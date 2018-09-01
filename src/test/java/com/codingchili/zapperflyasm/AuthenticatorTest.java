@@ -1,8 +1,8 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.Authenticator;
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
+import com.codingchili.zapperflyasm.handler.Authenticator;
 import com.codingchili.zapperflyasm.model.User;
+import com.codingchili.zapperflyasm.model.ZapperConfig;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -13,7 +13,6 @@ import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.SystemContext;
 import com.codingchili.core.protocol.RoleMap;
 import com.codingchili.core.security.HashFactory;
-import com.codingchili.core.security.Token;
 
 /**
  * @author Robin Duda
@@ -51,31 +50,42 @@ public class AuthenticatorTest {
     @Test
     public void verifyPassword(TestContext test) {
         Async async = test.async();
-        String password = "pass";
-        User user = new User()
-                .setUsername("test")
-                .setPassword(new HashFactory(null).hash(password));
+        String plaintext = "pass";
 
-        Authenticator.addUserToConfiguration(user);
+        new HashFactory(core).hash(plaintext).setHandler(password -> {
+            User user = new User()
+                    .setUsername("test")
+                    .setPassword(password.result());
 
-        authenticator.verifyPassword(user, password).setHandler(done -> {
-            test.assertTrue(done.succeeded());
+            Authenticator.addUserToConfiguration(user);
 
-            authenticator.verifyPassword(user, "another").setHandler(done2 -> {
-                test.assertFalse(done2.succeeded());
-                async.complete();
+            authenticator.verifyPassword(user, plaintext).setHandler(done -> {
+                test.assertTrue(done.succeeded());
+
+                authenticator.verifyPassword(user, "another").setHandler(done2 -> {
+                    test.assertFalse(done2.succeeded());
+                    async.complete();
+                });
             });
         });
     }
 
     @Test
     public void generateToken(TestContext test) {
+        Async async = test.async();
         User user = new User()
                 .setUsername("theUser")
                 .setRole(adminRole);
 
-        Token token = authenticator.generateToken(user);
-        test.assertEquals(authenticator.verifyToken(token).getName(), adminRole);
-        test.assertEquals(authenticator.verifyToken(token.setDomain("root")).getName(), RoleMap.PUBLIC);
+        authenticator.generateToken(user).setHandler(token -> {
+            authenticator.verifyToken(token.result()).setHandler(role -> {
+                test.assertEquals(role.result().getName(), adminRole);
+
+                authenticator.verifyToken(token.result().setDomain("root")).setHandler(fakeRole -> {
+                    test.assertEquals(fakeRole.result().getName(), RoleMap.PUBLIC);
+                    async.complete();
+                });
+            });
+        });
     }
 }

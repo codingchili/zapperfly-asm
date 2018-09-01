@@ -1,7 +1,7 @@
 package com.codingchili.zapperflyasm;
 
 import com.codingchili.zapperflyasm.model.BuildJob;
-import com.codingchili.zapperflyasm.model.JobQueue;
+import com.codingchili.zapperflyasm.scheduling.JobQueue;
 import io.vertx.core.Future;
 
 import java.util.*;

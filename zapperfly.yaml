@@ -1,12 +1,36 @@
 ---
 users:
-timeoutSeconds: 300
-tokenSecret: "5ieoj2+huRF1vedTkotXQPZgSh8N5VbiWwLbfVYSVJrfPdmQA5uiqwQrjbOMFpC3"
-buildPath: "builds/"
-dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm\
-  \ $image /tmp/build/$script"
-groupName: "zapperfly-builds"
-windowsShell: "powershell.exe -Command"
-unixShell: "/bin/bash -E"
-instanceName:
-capacity: 2
+- role: "user"
+  username: "test"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$bOX+sSG7zPvqJZVdRuQwNw$oC+H20WzHk1Dzg4nXWcoN+7pHIS+EAfAgjpkze4aSPU"
+- role: "admin"
+  username: "root"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$rplsqTZrrcbLzc7R7NuVIg$3NSJssOIEva636AGyQ4NoQi69JbbqiemqmAhPLX8ryQ"
+- role: "user"
+  username: "test1"
+- role: "user"
+  username: "user"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$/H+wrTUmLm7NWLZU4uMuOQ$RlZbGDnvof9lpSJXSxIjnchswhBKxr4VLnIyTd1nAds"
+build:
+  timeoutSeconds: 300
+  tokenSecret: "5ieoj2+huRF1vedTkotXQPZgSh8N5VbiWwLbfVYSVJrfPdmQA5uiqwQrjbOMFpC3"
+  buildPath: "builds/"
+  dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm\
+    \ $image /tmp/build/$script"
+  groupName: "zapperfly-builds"
+  windowsShell: "powershell.exe -Command"
+  unixShell: "/bin/bash -E"
+  capacity: 2
+integrations:
+  com.codingchili.zapperflyasm.integration.jenkins.WebhookNotifyCommit:
+  # the whitelist contains a list of source IPs that are allowed to trigger a build.
+  # this requires that the repository and branch is configured.
+    whitelist:
+      - "127.0.0.1"
+      - "localhost"
+  com.codingchili.zapperflyasm.integration.bitbucket.StatusPusher:
+    api: "/rest/build-status/1.0/commits/"
+    host: "bitbucket"
+    port: 443
+    username: "api"
+    password: "api"

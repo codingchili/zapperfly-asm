@@ -1,6 +1,6 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.ConfigurationHandler;
+import com.codingchili.zapperflyasm.handler.ConfigurationHandler;
 import com.codingchili.zapperflyasm.model.ApiRequest;
 import com.codingchili.zapperflyasm.model.BuildConfiguration;
 import io.vertx.core.json.JsonObject;

@@ -1,6 +1,6 @@
 package com.codingchili.zapperflyasm.commandline;
 
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
+import com.codingchili.zapperflyasm.model.ZapperConfig;
 import io.vertx.core.Future;
 
 import com.codingchili.core.context.*;

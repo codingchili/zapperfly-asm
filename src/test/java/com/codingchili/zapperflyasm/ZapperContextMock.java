@@ -2,9 +2,9 @@ package com.codingchili.zapperflyasm;
 
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.SystemContext;
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
-import com.codingchili.zapperflyasm.controller.ZapperContext;
+
 import com.codingchili.zapperflyasm.model.*;
+import com.codingchili.zapperflyasm.logging.LogEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 

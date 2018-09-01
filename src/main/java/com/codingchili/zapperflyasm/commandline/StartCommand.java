@@ -1,6 +1,9 @@
 package com.codingchili.zapperflyasm.commandline;
 
-import com.codingchili.zapperflyasm.controller.*;
+import com.codingchili.zapperflyasm.model.*;
+import com.codingchili.zapperflyasm.ZapperContext;
+import com.codingchili.zapperflyasm.handler.*;
+import com.codingchili.zapperflyasm.integration.jenkins.WebhookNotifyCommit;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.GroupConfig;
 import io.vertx.core.*;
@@ -26,9 +29,11 @@ public class StartCommand implements Command {
     private static final String NAME = "--name";
     private static final String GROUP = "--group";
     private static final String CAPACITY = "--capacity";
+    private EnvironmentConfiguration environment;
 
     @Override
     public void execute(Future<CommandResult> start, CommandExecutor executor) {
+        environment = config.getEnvironment();
         loadInstanceName(executor);
         loadInstanceGroup(executor);
         loadCapacity(executor);
@@ -60,14 +65,18 @@ public class StartCommand implements Command {
     private void startup(Future<CommandResult> start, CommandExecutor executor, ZapperContext context) {
         List<Future> deployments = new ArrayList<>();
         MultiHandler api = new MultiHandler(
+                new WebhookNotifyCommit(),
                 new BuildHandler(),
                 new ConfigurationHandler(),
                 new AuthenticationHandler());
 
         if (executor.hasProperty(WEBSITE)) {
-            deployments.add(context.listener(() -> new Webserver(
-                    Integer.parseInt(executor.getProperty(WEBSITE)
-                            .orElse(DEFAULT_PORT)))
+            int port = Integer.parseInt(executor.getProperty(WEBSITE)
+                    .orElse(DEFAULT_PORT));
+
+            InstanceInfo.get().setWebsiteEnabled(port);
+
+            deployments.add(context.listener(() -> new Webserver(port)
                     .handler(api)));
         } else {
             deployments.add(context.handler(() -> api));
@@ -84,18 +93,18 @@ public class StartCommand implements Command {
     }
 
     private void loadCapacity(CommandExecutor executor) {
-        config.setCapacity(Integer.parseInt(executor.getProperty(CAPACITY).orElse(
-                (ZapperConfig.get().getCapacity() + "")
+        environment.setCapacity(Integer.parseInt(executor.getProperty(CAPACITY).orElse(
+                (environment.getCapacity() + "")
         )));
     }
 
     private void loadInstanceGroup(CommandExecutor executor) {
-        config.setGroupName(executor.getProperty(GROUP).orElse("default"));
+        environment.setGroupName(executor.getProperty(GROUP).orElse("default"));
     }
 
     private void loadInstanceName(CommandExecutor executor) {
-        if (config.getInstanceName() == null) {
-            config.setInstanceName(executor.getProperty(NAME)
+        if (environment.getInstanceName() == null) {
+            environment.setInstanceName(executor.getProperty(NAME)
                     .orElse(Environment.hostname()
                             .orElse("zapperfly." + UUID.randomUUID().toString().split("-")[0])));
         }

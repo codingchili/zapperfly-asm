@@ -1,7 +1,7 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.controller.AuthenticationHandler;
-import com.codingchili.zapperflyasm.controller.Authenticator;
+import com.codingchili.zapperflyasm.handler.AuthenticationHandler;
+import com.codingchili.zapperflyasm.handler.Authenticator;
 import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -44,29 +44,33 @@ public class AuthenticationHandlerTest {
     public void tryAuthenticate(TestContext test) {
         Async async = test.async();
         String username = "user";
-        String password = "password";
-        Authenticator.addUserToConfiguration(new User()
-                .setUsername(username)
-                .setPassword(new HashFactory(null).hash(password)));
+        String plaintext = "password";
 
-        handler.handle(RequestMock.get(ROUTE_LOGIN, ((response, status) -> {
-            test.assertEquals(ResponseStatus.ACCEPTED, status);
-            test.assertTrue(response.containsKey(ID_DOMAIN));
-            test.assertTrue(response.containsKey(ID_KEY));
-            async.complete();
-        }), new JsonObject()
-                .put(ID_USERNAME, username)
-                .put(ID_PASSWORD, password)));
+        new HashFactory(core).hash(plaintext).setHandler(password -> {
+            Authenticator.addUserToConfiguration(new User()
+                    .setUsername(username)
+                    .setPassword(password.result()));
+
+            handler.handle(RequestMock.get(ROUTE_LOGIN, ((response, status) -> {
+                test.assertEquals(ResponseStatus.ACCEPTED, status);
+                test.assertTrue(response.containsKey(ID_DOMAIN));
+                test.assertTrue(response.containsKey(ID_KEY));
+                async.complete();
+            }), new JsonObject()
+                    .put(ID_USERNAME, username)
+                    .put(ID_PASSWORD, plaintext)));
+        });
     }
 
     @Test
     public void hashFact(TestContext test) {
         Async async = test.async();
         HashFactory hash = new HashFactory(core);
-        String argon =  hash.hash("pass");
-        hash.verify(done -> {
-            System.out.println(done.succeeded());
-            async.complete();
-        }, argon, "pass");
+        hash.hash("pass").setHandler(argon -> {
+            hash.verify(done -> {
+                System.out.println(done.succeeded());
+                async.complete();
+            }, argon.result(), "pass");
+        });
     }
 }
