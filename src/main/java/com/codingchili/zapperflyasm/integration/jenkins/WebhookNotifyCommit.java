@@ -42,9 +42,6 @@ public class WebhookNotifyCommit implements CoreHandler {
         config = ZapperConfig.get()
                 .getConfigurationByPlugin(getClass(), WebhookConfiguration.class);
 
-        // todo need to map /git/notifyCommit properly to this handler and route without using query params.
-        protocol.routeMapper(request -> request.route().replaceFirst("(/)*git/", ""));
-
         // simple authenticator that checks source IP.
         protocol.authenticator(request -> {
             String remote = request.connection().remote();
@@ -61,7 +58,7 @@ public class WebhookNotifyCommit implements CoreHandler {
         });
     }
 
-    @Api
+    @Api(route = "git/notifyCommit")
     public void notifyCommit(Request request) {
         JsonObject data = request.data();
         BuildConfiguration build = new BuildConfiguration();
