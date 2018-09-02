@@ -32,7 +32,7 @@ public class ConfigurationHandler implements CoreHandler {
     @Override
     public void init(CoreContext core) {
         this.core = ZapperContext.ensure(core);
-        this.configurations = ZapperContext.ensure(core).getConfigurationManager();
+        this.configurations = this.core.getConfigurationManager();
     }
 
     @Override
@@ -68,7 +68,7 @@ public class ConfigurationHandler implements CoreHandler {
     @Api(USER)
     @Description("Lists the cluster configuration.")
     public void cluster(ApiRequest request) {
-        request.write(ZapperConfig.get().getEnvironment());
+        request.write(ZapperConfig.getEnvironment());
     }
 
     @Override

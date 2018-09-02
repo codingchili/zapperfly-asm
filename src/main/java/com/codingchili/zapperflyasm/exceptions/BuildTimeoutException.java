@@ -17,6 +17,6 @@ public class BuildTimeoutException extends CoreRuntimeException {
      */
     public BuildTimeoutException(BuildJob job) {
         super(String.format("Build %s has failed due to timeout after %d.",
-                job.getId(), ZapperConfig.get().getEnvironment().getTimeoutSeconds()));
+                job.getId(), ZapperConfig.getEnvironment().getTimeoutSeconds()));
     }
 }

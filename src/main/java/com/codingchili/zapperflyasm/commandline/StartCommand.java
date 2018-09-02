@@ -23,7 +23,6 @@ import static com.codingchili.core.files.Configurations.system;
  * Command for starting the application and parsing some commandline options.
  */
 public class StartCommand implements Command {
-    private ZapperConfig config = ZapperConfig.get();
     private static final String WEBSITE = "--website";
     private static final String DEFAULT_PORT = "443";
     private static final String NAME = "--name";
@@ -33,7 +32,7 @@ public class StartCommand implements Command {
 
     @Override
     public void execute(Future<CommandResult> start, CommandExecutor executor) {
-        environment = config.getEnvironment();
+        environment = ZapperConfig.getEnvironment();
         loadInstanceName(executor);
         loadInstanceGroup(executor);
         loadCapacity(executor);

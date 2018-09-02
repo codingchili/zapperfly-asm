@@ -178,7 +178,7 @@ public class GitExecutor implements VersionControlSystem {
     }
 
     private String getDirectory(BuildJob job) {
-        return ZapperConfig.get().getEnvironment().getBuildPath() + "/" + job.getId();
+        return ZapperConfig.getEnvironment().getBuildPath() + "/" + job.getId();
     }
 
     @Override

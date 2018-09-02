@@ -25,7 +25,7 @@ public class ZapperConfig implements Configurable {
     private static Class<? extends AsyncStorage> storage = HazelMap.class;
     private EnvironmentConfiguration environment = new EnvironmentConfiguration();
     private Set<User> users = new HashSet<>();
-    private JsonObject integrations;
+    private JsonObject integrations = new JsonObject();
 
     /**
      * Retrieves a storage implementation used to host objects of the given class.
@@ -88,8 +88,8 @@ public class ZapperConfig implements Configurable {
     /**
      * @return the environment specific configuration for the current instance.
      */
-    public EnvironmentConfiguration getEnvironment() {
-        return environment;
+    public static EnvironmentConfiguration getEnvironment() {
+        return get().environment;
     }
 
     /**
@@ -110,7 +110,9 @@ public class ZapperConfig implements Configurable {
             return Serializer.unpack(integrations.getJsonObject(pluginClass.getName()), theClass);
         } else {
             try {
-                return theClass.newInstance();
+                E configuration = theClass.newInstance();
+                integrations.put(pluginClass.getName(), Serializer.json(configuration));
+                return configuration;
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -120,14 +122,14 @@ public class ZapperConfig implements Configurable {
     /**
      * @return a json object that represents all of the integration specific configuration.
      */
-    public JsonObject getIntegrations() {
-        return integrations;
+    public Map<String, Object> getIntegrations() {
+        return integrations.getMap();
     }
 
     /**
      * @param json a jsonobject that contains configuration for integrations.
      */
-    public void setIntegrations(JsonObject json) {
-        integrations = json;
+    public void setIntegrations(Map<String, Object> json) {
+        integrations = JsonObject.mapFrom(json);
     }
 }

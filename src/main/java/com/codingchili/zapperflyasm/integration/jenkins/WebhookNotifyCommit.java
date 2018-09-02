@@ -13,6 +13,7 @@ import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 
+import static com.codingchili.core.protocol.RoleMap.PUBLIC;
 import static com.codingchili.core.protocol.RoleMap.USER;
 
 /**
@@ -25,8 +26,8 @@ import static com.codingchili.core.protocol.RoleMap.USER;
  * - This requires an existing config for the branch and repository.
  * - The server triggering the build must have its hostname added to the whitelist.
  */
-@Roles(USER)
-@Address("jenkins/git")
+@Roles(PUBLIC)
+@Address("jenkins")
 public class WebhookNotifyCommit implements CoreHandler {
     private static final String BRANCHES = "branches";
     private static final String URL = "url";
@@ -39,6 +40,8 @@ public class WebhookNotifyCommit implements CoreHandler {
         context = ZapperContext.ensure(core);
         config = ZapperConfig.get()
                 .getConfigurationByPlugin(getClass(), WebhookConfiguration.class);
+
+        protocol.routeMapper(request -> request.route().replaceFirst("(/)*git/", ""));
     }
 
     @Api
@@ -70,9 +73,9 @@ public class WebhookNotifyCommit implements CoreHandler {
             protocol.process(request);
         } else {
             request.error(new CoreRuntimeException(
-                    String.format("The source IP '%s' is not in the jenkins whitelist \n'%s'.",
+                    String.format("The source IP '%s' is not in the jenkins whitelist '%s'.",
                             remote,
-                            whitelist.stream().collect(Collectors.joining("\n -")))));
+                            whitelist.stream().collect(Collectors.joining(", ")))));
         }
     }
 }

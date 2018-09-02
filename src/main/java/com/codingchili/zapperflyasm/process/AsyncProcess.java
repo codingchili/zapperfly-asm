@@ -20,7 +20,7 @@ import com.codingchili.core.logging.Logger;
 public class AsyncProcess {
     private static final int PROCESS_POLL_DELAY = 1000;
     private static final int LOG_DELAY = 100;
-    private int timeout = ZapperConfig.get().getEnvironment().getTimeoutSeconds();
+    private int timeout = ZapperConfig.getEnvironment().getTimeoutSeconds();
     private CoreContext core;
     private Logger logger;
     private String[] command;
@@ -153,10 +153,10 @@ public class AsyncProcess {
         String os = System.getProperty("os.name");
 
         if (os.toLowerCase().contains("windows")) {
-            return ZapperConfig.get().getEnvironment().getWindowsShell() + " ";
+            return ZapperConfig.getEnvironment().getWindowsShell() + " ";
         } else {
             // assume bash exists on unix.
-            return ZapperConfig.get().getEnvironment().getUnixShell() + " ";
+            return ZapperConfig.getEnvironment().getUnixShell() + " ";
         }
     }
 

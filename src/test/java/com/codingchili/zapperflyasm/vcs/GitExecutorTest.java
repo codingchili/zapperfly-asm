@@ -29,7 +29,7 @@ public class GitExecutorTest {
     public void setUp() {
         this.core = new SystemContext();
         this.vcs = new GitExecutor(core);
-        ZapperConfig.get().getEnvironment().setBuildPath(TestConfig.TEST_DIR);
+        ZapperConfig.getEnvironment().setBuildPath(TestConfig.TEST_DIR);
     }
 
     @After

@@ -57,13 +57,15 @@ public class ZapperContext extends SystemContext {
                 AsyncStorage<InstanceInfo> instances = done.result().resultAt(2);
 
                 ZapperContext zapper = new ZapperContext(core);
-                DefaultBuildManager manager = new DefaultBuildManager(core);
+
+                zapper.configurations = new DefaultConfigurationManager(configs);
+                zapper.executor = new ProcessBuilderExecutor(core);
+                zapper.vcs = new GitExecutor(core);
+
+                DefaultBuildManager manager = new DefaultBuildManager(zapper);
 
                 manager.setInstances(instances);
                 manager.setBuilds(builds);
-
-                zapper.vcs = new GitExecutor(core);
-                zapper.executor = new ProcessBuilderExecutor(core);
 
                 HazelJobQueue.create(core).setHandler(queue -> {
                     if (queue.succeeded()) {
@@ -76,7 +78,6 @@ public class ZapperContext extends SystemContext {
                     }
                 });
 
-                zapper.configurations = new DefaultConfigurationManager(configs);
                 zapper.builder = manager;
                 manager.start();
 

@@ -27,7 +27,7 @@ public class Authenticator {
      */
     public Authenticator(CoreContext core) {
         this.hasher = new HashFactory(core);
-        this.factory = new TokenFactory(core, ZapperConfig.get().getEnvironment().getTokenSecret().getBytes());
+        this.factory = new TokenFactory(core, ZapperConfig.getEnvironment().getTokenSecret().getBytes());
     }
 
     /**

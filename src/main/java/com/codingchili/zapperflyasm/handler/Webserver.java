@@ -20,7 +20,6 @@ import com.codingchili.core.logging.Logger;
 public class Webserver implements CoreListener {
     private static final String POLYMER = "polymer/";
     private ListenerSettings settings = new ListenerSettings();
-    private Logger logger;
     private CoreContext core;
     private CoreHandler handler;
     private int port;
@@ -47,7 +46,6 @@ public class Webserver implements CoreListener {
     @Override
     public void init(CoreContext core) {
         this.core = core;
-        this.logger = core.logger(getClass());
         handler.init(core);
     }
 

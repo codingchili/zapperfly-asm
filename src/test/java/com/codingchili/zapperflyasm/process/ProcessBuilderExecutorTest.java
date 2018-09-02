@@ -32,7 +32,7 @@ public class ProcessBuilderExecutorTest {
         job.setDirectory(TestConfig.TEST_DIR);
         core = new SystemContext();
         executor = new ProcessBuilderExecutor(core);
-        ZapperConfig.get().getEnvironment().setTimeoutSeconds(3);
+        ZapperConfig.getEnvironment().setTimeoutSeconds(3);
     }
 
     @After

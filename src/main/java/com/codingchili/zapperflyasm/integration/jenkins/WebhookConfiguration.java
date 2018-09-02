@@ -4,11 +4,15 @@ import java.util.*;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Configuration for the jenkins integration.
  */
 public class WebhookConfiguration {
-    private Set<String> whitelist = new HashSet<>(Arrays.asList("localhost", "127.0.0.1"));
+    private Set<String> whitelist = new HashSet<>(Arrays.asList(
+            "localhost",
+            "127.0.0.1",
+            "0:0:0:0:0:0:0:1")
+    );
 
     /**
      * @return a list of source IPs that are allowed to trigger a build.

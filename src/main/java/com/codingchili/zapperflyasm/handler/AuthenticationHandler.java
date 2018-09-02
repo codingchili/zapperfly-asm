@@ -26,8 +26,7 @@ public class AuthenticationHandler implements CoreHandler {
 
     @Override
     public void init(CoreContext core) {
-        ZapperContext core1 = ZapperContext.ensure(core);
-        this.authenticator = core1.authenticator();
+        this.authenticator = ZapperContext.ensure(core).authenticator();
     }
 
     @Api

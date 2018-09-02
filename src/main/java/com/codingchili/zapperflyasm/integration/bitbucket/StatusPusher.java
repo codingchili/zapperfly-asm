@@ -4,6 +4,10 @@ import com.codingchili.zapperflyasm.ZapperContext;
 import com.codingchili.zapperflyasm.logging.BuildEventListener;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.ZapperConfig;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
+
+import java.util.Base64;
 
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.listener.CoreService;
@@ -46,13 +50,24 @@ public class StatusPusher implements BuildEventListener, CoreService {
     private void updateStatus(BuildJob job) {
         context.getJobManager().instances().setHandler(instances -> {
 
+            String authentication = Base64.getEncoder()
+                    .encodeToString(
+                            (bitbucket.getUser() + ":" + bitbucket.getPass()).getBytes()
+                    );
+
             context.vertx().createHttpClient()
                     .post(bitbucket.getPort(),
                             bitbucket.getHost(),
                             bitbucket.getApi() + job.getCommit(),
                             response -> {
-                                // todo verify 200 OK
+                                job.log(String.format("BitBucket %s server responded with '%d - %s' to status update.",
+                                        getClass().getSimpleName(),
+                                        response.statusCode(),
+                                        response.statusMessage()));
+
+                                response.bodyHandler(body -> job.log(body.toString()));
                             })
+                    .putHeader(HttpHeaderNames.AUTHORIZATION, "Basic " + authentication)
                     .end(Serializer.buffer(new StatusUpdate(job, instances)));
         });
 
@@ -61,7 +76,7 @@ public class StatusPusher implements BuildEventListener, CoreService {
 
     private void logStatusUpdate(BuildJob job) {
         job.log(
-                String.format("BitBucket %s updated status of build '%s' to %s.",
+                String.format("BitBucket %s updated status of build '%s' to %s ..",
                         getClass().getSimpleName(),
                         job.getId(),
                         job.getProgress().name()
