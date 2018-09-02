@@ -1,7 +1,9 @@
 package com.codingchili.zapperflyasm.integration.jenkins;
 
-import com.codingchili.zapperflyasm.model.*;
 import com.codingchili.zapperflyasm.ZapperContext;
+import com.codingchili.zapperflyasm.model.BuildConfiguration;
+import com.codingchili.zapperflyasm.model.ZapperConfig;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
 import java.util.Set;
@@ -13,7 +15,6 @@ import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 
-import static com.codingchili.core.protocol.RoleMap.PUBLIC;
 import static com.codingchili.core.protocol.RoleMap.USER;
 
 /**
@@ -26,7 +27,7 @@ import static com.codingchili.core.protocol.RoleMap.USER;
  * - This requires an existing config for the branch and repository.
  * - The server triggering the build must have its hostname added to the whitelist.
  */
-@Roles(PUBLIC)
+@Roles(USER)
 @Address("jenkins")
 public class WebhookNotifyCommit implements CoreHandler {
     private static final String BRANCHES = "branches";
@@ -41,7 +42,23 @@ public class WebhookNotifyCommit implements CoreHandler {
         config = ZapperConfig.get()
                 .getConfigurationByPlugin(getClass(), WebhookConfiguration.class);
 
+        // todo need to map /git/notifyCommit properly to this handler and route without using query params.
         protocol.routeMapper(request -> request.route().replaceFirst("(/)*git/", ""));
+
+        // simple authenticator that checks source IP.
+        protocol.authenticator(request -> {
+            String remote = request.connection().remote();
+            Set<String> whitelist = config.getWhitelist();
+
+            if (whitelist.contains(remote)) {
+                return Future.succeededFuture(Role.USER);
+            } else {
+                return Future.failedFuture(new CoreRuntimeException(
+                        String.format("The source IP '%s' is not in the jenkins whitelist '%s'.",
+                                remote,
+                                whitelist.stream().collect(Collectors.joining(", ")))));
+            }
+        });
     }
 
     @Api
@@ -66,16 +83,6 @@ public class WebhookNotifyCommit implements CoreHandler {
 
     @Override
     public void handle(Request request) {
-        String remote = request.connection().remote();
-        Set<String> whitelist = config.getWhitelist();
-
-        if (whitelist.contains(remote)) {
-            protocol.process(request);
-        } else {
-            request.error(new CoreRuntimeException(
-                    String.format("The source IP '%s' is not in the jenkins whitelist '%s'.",
-                            remote,
-                            whitelist.stream().collect(Collectors.joining(", ")))));
-        }
+        protocol.process(request);
     }
 }
