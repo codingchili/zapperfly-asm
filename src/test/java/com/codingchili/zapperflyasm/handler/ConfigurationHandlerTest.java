@@ -1,5 +1,6 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.handler;
 
+import com.codingchili.zapperflyasm.ZapperContextMock;
 import com.codingchili.zapperflyasm.handler.ConfigurationHandler;
 import com.codingchili.zapperflyasm.model.ApiRequest;
 import com.codingchili.zapperflyasm.model.BuildConfiguration;

@@ -1,5 +1,6 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.vcs;
 
+import com.codingchili.zapperflyasm.TestConfig;
 import com.codingchili.zapperflyasm.model.*;
 import com.codingchili.zapperflyasm.vcs.GitExecutor;
 import com.codingchili.zapperflyasm.vcs.VersionControlSystem;
@@ -28,7 +29,7 @@ public class GitExecutorTest {
     public void setUp() {
         this.core = new SystemContext();
         this.vcs = new GitExecutor(core);
-        ZapperConfig.get().setBuildPath(TestConfig.TEST_DIR);
+        ZapperConfig.get().getEnvironment().setBuildPath(TestConfig.TEST_DIR);
     }
 
     @After

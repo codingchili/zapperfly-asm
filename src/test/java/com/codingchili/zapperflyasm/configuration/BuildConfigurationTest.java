@@ -1,4 +1,4 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.configuration;
 
 import com.codingchili.zapperflyasm.model.BuildConfiguration;
 import io.vertx.ext.unit.junit.VertxUnitRunner;

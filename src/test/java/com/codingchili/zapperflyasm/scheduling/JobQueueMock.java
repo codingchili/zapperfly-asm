@@ -1,4 +1,4 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.scheduling;
 
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.scheduling.JobQueue;
@@ -27,7 +27,7 @@ public class JobQueueMock implements JobQueue {
     }
 
     @Override
-    public Future<BuildJob> poll() {
+    public Future<BuildJob> poll(int timeoutMS) {
         Future<BuildJob> future = Future.future();
         future.complete(queue.poll());
         return future;

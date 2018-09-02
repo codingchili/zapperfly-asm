@@ -88,7 +88,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
             String script = "#!/bin/sh\n" + config.getCmdLine();
             core.fileSystem().writeFileBlocking(job.getDirectory() + "/" + BUILD_SCRIPT_NAME, Buffer.buffer(script));
             job.log(String.format("executing build script in docker image '%s'.", config.getDockerImage()));
-            command = ZapperConfig.get().getDockerLine()
+            command = ZapperConfig.get().getEnvironment().getDockerLine()
                     .replace("$image", config.getDockerImage())
                     .replace("$script", BUILD_SCRIPT_NAME)
                     .replace("$directory", job.getDirectory());
@@ -111,7 +111,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
     private void onTimeout(BuildJob job) {
         job.setProgress(Status.FAILED);
         logEvent("buildTimeout", job);
-        job.log("Build timed out after " + ZapperConfig.get().getTimeoutSeconds() + "s.");
+        job.log("Build timed out after " + ZapperConfig.get().getEnvironment().getTimeoutSeconds() + "s.");
     }
 
     private void onSuccess(BuildJob job) {

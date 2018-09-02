@@ -1,6 +1,5 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.building;
 
-import com.codingchili.zapperflyasm.building.BuildExecutor;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import io.vertx.core.Future;
 

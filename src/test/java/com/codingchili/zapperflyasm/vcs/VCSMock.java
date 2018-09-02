@@ -1,5 +1,6 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.vcs;
 
+import com.codingchili.zapperflyasm.TestConfig;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.vcs.GitExecutor;
 import com.codingchili.zapperflyasm.vcs.VersionControlSystem;

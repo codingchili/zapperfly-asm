@@ -175,8 +175,8 @@ public class DefaultBuildManager implements BuildManager {
     }
 
     @Override
-    public Future<Collection<InstanceInfo>> instances() {
-        Future<Collection<InstanceInfo>> future = Future.future();
+    public Future<List<InstanceInfo>> instances() {
+        Future<List<InstanceInfo>> future = Future.future();
         instances.values(values -> {
             if (values.succeeded()) {
                 future.complete(values.result().stream().peek(instance -> {

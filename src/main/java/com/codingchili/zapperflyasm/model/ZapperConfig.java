@@ -23,8 +23,8 @@ import com.codingchili.core.storage.*;
 public class ZapperConfig implements Configurable {
     private static String PATH = "./zapperfly.yaml";
     private static Class<? extends AsyncStorage> storage = HazelMap.class;
+    private EnvironmentConfiguration environment = new EnvironmentConfiguration();
     private Set<User> users = new HashSet<>();
-    private EnvironmentConfiguration environment;
     private JsonObject integrations;
 
     /**

@@ -1,10 +1,8 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.zapperflyasm.building.BuildManager;
-import com.codingchili.zapperflyasm.building.DefaultBuildManager;
+import com.codingchili.zapperflyasm.building.*;
 import com.codingchili.zapperflyasm.configuration.ConfigurationManager;
 import com.codingchili.zapperflyasm.configuration.DefaultConfigurationManager;
-import com.codingchili.zapperflyasm.building.ProcessBuilderExecutor;
 import com.codingchili.zapperflyasm.handler.Authenticator;
 import com.codingchili.zapperflyasm.logging.HazelLogStore;
 import com.codingchili.zapperflyasm.logging.LogStore;
@@ -135,7 +133,7 @@ public class ZapperContext extends SystemContext {
     /**
      * @return get the process builder for executing system processes.
      */
-    public ProcessBuilderExecutor getExecutor() {
+    public BuildExecutor getExecutor() {
         return executor;
     }
 

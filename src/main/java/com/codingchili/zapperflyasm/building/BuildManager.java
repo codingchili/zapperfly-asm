@@ -31,7 +31,7 @@ public interface BuildManager {
      *
      * @return callback.
      */
-    Future<Collection<InstanceInfo>> instances();
+    Future<List<InstanceInfo>> instances();
 
     /**
      * Cancels a build that is in progress.

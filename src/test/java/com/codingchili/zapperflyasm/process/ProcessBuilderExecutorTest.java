@@ -1,5 +1,6 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.process;
 
+import com.codingchili.zapperflyasm.TestConfig;
 import com.codingchili.zapperflyasm.model.*;
 import com.codingchili.zapperflyasm.building.BuildExecutor;
 import com.codingchili.zapperflyasm.model.BuildJob;
@@ -31,7 +32,7 @@ public class ProcessBuilderExecutorTest {
         job.setDirectory(TestConfig.TEST_DIR);
         core = new SystemContext();
         executor = new ProcessBuilderExecutor(core);
-        ZapperConfig.get().setTimeoutSeconds(3);
+        ZapperConfig.get().getEnvironment().setTimeoutSeconds(3);
     }
 
     @After

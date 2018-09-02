@@ -4,7 +4,7 @@ import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.InstanceInfo;
 import io.vertx.core.AsyncResult;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  * @author Robin Duda
@@ -18,10 +18,18 @@ public class StatusUpdate {
     private String url;
     private String description;
 
-    public StatusUpdate(BuildJob job, AsyncResult<Collection<InstanceInfo>> result) {
+    /**
+     * Creates a new status update that matches the bitbucket server API.
+     *
+     * @param job    the job to update the build status of.
+     * @param instances a list of all the instances in the cluster.
+     */
+    public StatusUpdate(BuildJob job, AsyncResult<List<InstanceInfo>> instances) {
 
-        if (result.succeeded()) {
-            url = result.result().stream()
+        if (instances.succeeded()) {
+            // use a random webserver instance.
+            Collections.shuffle(instances.result());
+            url = instances.result().stream()
                     .filter(instance -> instance.getWebserver() != null)
                     .map(instance -> String.format("https://%s:%d/?id=%s",
                             instance.getWebserver(), instance.getWebserverPort(), job.getId()))

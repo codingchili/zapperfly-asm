@@ -68,7 +68,7 @@ public class ConfigurationHandler implements CoreHandler {
     @Api(USER)
     @Description("Lists the cluster configuration.")
     public void cluster(ApiRequest request) {
-        request.write(ZapperConfig.get());
+        request.write(ZapperConfig.get().getEnvironment());
     }
 
     @Override

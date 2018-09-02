@@ -1,19 +1,24 @@
 package com.codingchili.zapperflyasm;
 
-import com.codingchili.core.configuration.Environment;
-import com.codingchili.core.context.SystemContext;
-
+import com.codingchili.zapperflyasm.building.*;
+import com.codingchili.zapperflyasm.configuration.ConfigurationManager;
+import com.codingchili.zapperflyasm.configuration.DefaultConfigurationManager;
+import com.codingchili.zapperflyasm.logging.*;
 import com.codingchili.zapperflyasm.model.*;
-import com.codingchili.zapperflyasm.logging.LogEvent;
+import com.codingchili.zapperflyasm.scheduling.JobQueueMock;
+import com.codingchili.zapperflyasm.vcs.VCSMock;
+import com.codingchili.zapperflyasm.vcs.VersionControlSystem;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 
+import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.CoreRuntimeException;
+import com.codingchili.core.context.SystemContext;
 import com.codingchili.core.storage.*;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Mock for the zapper application context.
  */
 public class ZapperContextMock extends ZapperContext {
@@ -23,6 +28,8 @@ public class ZapperContextMock extends ZapperContext {
     private AsyncStorage<InstanceInfo> instances;
     private AsyncStorage<BuildJob> builds;
     private LogStoreMock logs;
+    private BuildExecutor executor;
+    private VersionControlSystem vcs;
 
     public ZapperContextMock() {
         super(new SystemContext());
@@ -38,23 +45,22 @@ public class ZapperContextMock extends ZapperContext {
 
         ZapperConfig.setStoragePlugin(JsonMap.class);
         ZapperConfig config = ZapperConfig.get();
-        config.setBuildPath("test/resources/");
-        config.setTimeoutSeconds(3);
-        config.setInstanceName(Environment.hostname().orElse("zap.instance.1"));
+        config.getEnvironment().setBuildPath("test/resources/");
+        config.getEnvironment().setTimeoutSeconds(3);
+        config.getEnvironment().setInstanceName(Environment.hostname().orElse("zap.instance.1"));
 
         mock.configs = getMap(BuildConfiguration.class);
         mock.builds = getMap(BuildJob.class);
         mock.instances = getMap(InstanceInfo.class);
         mock.logs = new LogStoreMock();
         mock.branches = new DefaultConfigurationManager(mock.configs);
+        mock.executor = new BuildExecutorMock(true);
+        mock.vcs = new VCSMock(mock);
 
         DefaultBuildManager manager = new DefaultBuildManager(mock);
 
-        manager.setExecutor(new BuildExecutorMock(true));
         manager.setQueue(new JobQueueMock());
-        manager.setLogs(mock.logs);
         manager.setBuilds(mock.builds);
-        manager.setVcs(new VCSMock(mock));
         manager.setInstances(mock.instances);
 
         mock.manager = manager;
@@ -76,10 +82,10 @@ public class ZapperContextMock extends ZapperContext {
     }
 
     /**
-     * @param logEvent adds a log event to the log store.
+     * @param line adds a log event to the log store.
      */
-    public void log(LogEvent logEvent) {
-        logs.add("default", logEvent);
+    public void log(String line) {
+        logs.add("default", line);
     }
 
     /**
@@ -97,5 +103,20 @@ public class ZapperContextMock extends ZapperContext {
         if (result.failed()) {
             throw new CoreRuntimeException(result.cause().getMessage());
         }
+    }
+
+    @Override
+    public LogStore getLogStore() {
+        return logs;
+    }
+
+    @Override
+    public VersionControlSystem getVcs() {
+        return vcs;
+    }
+
+    @Override
+    public BuildExecutor getExecutor() {
+        return executor;
     }
 }

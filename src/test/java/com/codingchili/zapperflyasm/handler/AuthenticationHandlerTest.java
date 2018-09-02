@@ -1,7 +1,6 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.handler;
 
-import com.codingchili.zapperflyasm.handler.AuthenticationHandler;
-import com.codingchili.zapperflyasm.handler.Authenticator;
+import com.codingchili.zapperflyasm.ZapperContextMock;
 import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;

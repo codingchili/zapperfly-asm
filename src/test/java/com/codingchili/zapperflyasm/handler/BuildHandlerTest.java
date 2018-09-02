@@ -1,5 +1,6 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.handler;
 
+import com.codingchili.zapperflyasm.ZapperContextMock;
 import com.codingchili.zapperflyasm.handler.BuildHandler;
 import com.codingchili.zapperflyasm.model.*;
 import com.codingchili.zapperflyasm.model.BuildJob;
@@ -48,7 +49,7 @@ public class BuildHandlerTest {
             handler.init(context);
 
             context.addConfig(new BuildConfiguration(REPOSITORY, BRANCH));
-            context.log(new LogEvent("testLine"));
+            context.log("testLine");
             context.addJob(getTestBuild());
 
             async.complete();

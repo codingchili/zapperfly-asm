@@ -1,6 +1,5 @@
-package com.codingchili.zapperflyasm;
+package com.codingchili.zapperflyasm.handler;
 
-import com.codingchili.zapperflyasm.handler.Authenticator;
 import com.codingchili.zapperflyasm.model.User;
 import com.codingchili.zapperflyasm.model.ZapperConfig;
 import io.vertx.ext.unit.Async;
