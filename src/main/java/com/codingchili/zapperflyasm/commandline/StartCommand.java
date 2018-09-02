@@ -13,7 +13,8 @@ import java.util.*;
 
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.*;
-import com.codingchili.core.listener.MultiHandler;
+import com.codingchili.core.listener.*;
+import com.codingchili.core.logging.Logger;
 
 import static com.codingchili.core.files.Configurations.system;
 
@@ -28,7 +29,10 @@ public class StartCommand implements Command {
     private static final String NAME = "--name";
     private static final String GROUP = "--group";
     private static final String CAPACITY = "--capacity";
+    private static final String PLUGIN_LOADED = "plugin.load";
+    private static final String CLASS = "class";
     private EnvironmentConfiguration environment;
+    private Logger logger;
 
     @Override
     public void execute(Future<CommandResult> start, CommandExecutor executor) {
@@ -62,12 +66,39 @@ public class StartCommand implements Command {
     }
 
     private void startup(Future<CommandResult> start, CommandExecutor executor, ZapperContext context) {
+        logger = context.logger(getClass());
+
         List<Future> deployments = new ArrayList<>();
-        MultiHandler api = new MultiHandler(
-                new WebhookNotifyCommit(),
-                new BuildHandler(),
-                new ConfigurationHandler(),
-                new AuthenticationHandler());
+        List<CoreHandler> handlers = new ArrayList<CoreHandler>() {{
+            add(new BuildHandler());
+            add(new ConfigurationHandler());
+            add(new AuthenticationHandler());
+        }};
+
+        ZapperConfig.get().configuredPlugins().forEach(className -> {
+            try {
+                Class<?> pluginClass = Class.<CoreDeployment>forName(className);
+                CoreDeployment plugin = (CoreDeployment) pluginClass.newInstance();
+
+                if (plugin instanceof CoreHandler) {
+                    // if the plugin is a handler we'll add it to the MultiHandler.
+                    handlers.add((CoreHandler) plugin);
+                    logger.event(PLUGIN_LOADED).put(CLASS, className).send();
+                } else {
+                    context.deploy(className).setHandler(done -> {
+                        if (done.failed()) {
+                            logger.onError(done.cause());
+                        }
+                    });
+                }
+
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                context.close();
+                throw new CoreRuntimeException(e);
+            }
+        });
+
+        MultiHandler api = new MultiHandler(handlers);
 
         if (executor.hasProperty(WEBSITE)) {
             int port = Integer.parseInt(executor.getProperty(WEBSITE)

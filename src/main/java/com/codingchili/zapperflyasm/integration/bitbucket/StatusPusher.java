@@ -5,7 +5,6 @@ import com.codingchili.zapperflyasm.logging.BuildEventListener;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.ZapperConfig;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaders;
 
 import java.util.Base64;
 

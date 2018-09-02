@@ -72,16 +72,19 @@ public class ZapperContext extends SystemContext {
                         manager.setQueue(queue.result());
                     }
                 });
+
+                zapper.builder = manager;
+
                 HazelLogStore.create(core).setHandler(logStore -> {
                     if (logStore.succeeded()) {
                         zapper.logStore = logStore.result();
+
+                        manager.start();
+                        future.complete(zapper);
+                    } else {
+                        throw new CoreRuntimeException(logStore.cause());
                     }
                 });
-
-                zapper.builder = manager;
-                manager.start();
-
-                future.complete(zapper);
             } else {
                 future.fail(done.cause());
             }

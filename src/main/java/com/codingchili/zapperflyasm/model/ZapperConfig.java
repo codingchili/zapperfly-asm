@@ -1,5 +1,6 @@
 package com.codingchili.zapperflyasm.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
@@ -131,5 +132,10 @@ public class ZapperConfig implements Configurable {
      */
     public void setIntegrations(Map<String, Object> json) {
         integrations = JsonObject.mapFrom(json);
+    }
+
+    @JsonIgnore
+    public Set<String> configuredPlugins() {
+        return integrations.getMap().keySet();
     }
 }
