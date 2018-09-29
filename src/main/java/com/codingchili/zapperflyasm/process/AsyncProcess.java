@@ -47,6 +47,13 @@ public class AsyncProcess {
     }
 
     /**
+     * Stops the process forcefully.
+     */
+    public void stop() {
+        process.destroyForcibly();
+    }
+
+    /**
      * Starts the process.
      *
      * @param directory the working dir of the process.

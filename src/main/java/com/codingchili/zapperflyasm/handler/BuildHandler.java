@@ -150,7 +150,7 @@ public class BuildHandler implements CoreHandler {
             if (done.succeeded()) {
                 consumer.accept(done.result());
             } else {
-                throw new CoreRuntimeException(throwableToString(done.cause()));
+                request.error(new CoreRuntimeException(done.cause().getMessage()));
             }
         });
     }

@@ -1,7 +1,7 @@
 package com.codingchili.zapperflyasm.model;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -103,14 +103,16 @@ public class BuildJob implements Storable {
     }
 
     public void setProgress(Status progress) {
-        this.progress = progress;
+        if (!this.progress.isFinal()) {
+            this.progress = progress;
 
-        if (progress.equals(Status.DONE) || progress.equals(Status.FAILED) || progress.equals(Status.CANCELLED)) {
-            this.end = ZonedDateTime.now().toInstant().toEpochMilli();
-        }
+            if (progress.isFinal()) {
+                this.end = ZonedDateTime.now().toInstant().toEpochMilli();
+            }
 
-        if (saver != null) {
-            saver.accept(this);
+            if (saver != null) {
+                saver.accept(this);
+            }
         }
     }
 

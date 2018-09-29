@@ -3,6 +3,8 @@ package com.codingchili.zapperflyasm.building;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import io.vertx.core.Future;
 
+import java.util.function.Supplier;
+
 /**
  * @author Robin Duda
  *
@@ -18,4 +20,10 @@ public interface BuildExecutor {
      * @return a future that completes when the build succeeds or fails.
      */
     Future<Void> build(BuildJob job);
+
+    /**
+     * @param id the id of the job to cancel.
+     * @return a future.
+     */
+    Future<Void> cancel(String id);
 }

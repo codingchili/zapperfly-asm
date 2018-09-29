@@ -355,6 +355,11 @@
             if (!this.route.path) {
                 this.set('route.path', "/any/any/");
             }
+
+            application.onAuthenticated(() => {
+                this._load();
+            });
+
             this._onResumeSession();
         }
 
@@ -410,16 +415,16 @@
         }
 
         _configure() {
+            this._load();
+            this.$.configure.open();
+        }
+
+        _load() {
             this.$.configLoader.body = JSON.stringify({
                 token: application.token,
                 target: 'config',
                 route: 'cluster'
             });
-            this.$.configLoader.generateRequest();
-            this.$.configure.open();
-        }
-
-        _filters() {
             this.$.configLoader.generateRequest();
         }
 

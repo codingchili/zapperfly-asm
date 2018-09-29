@@ -135,6 +135,9 @@
             <h2>[[_getHeader(build)]]</h2>
             <iron-icon on-click="_copyUrl" class="copy-url icon" icon="icons:content-copy"></iron-icon>
             <iron-icon on-click="_queueAnother" class="copy-url icon" icon="icons:cached"></iron-icon>
+            <template is="dom-if" if="{{_isCancellable(builds)}}">
+                <iron-icon on-click="_cancel" class="copy-url icon" icon="icons:cancel"></iron-icon>
+            </template>
             <paper-dialog-scrollable id="terminal" class="log">
                 <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
 
@@ -156,6 +159,8 @@
         <iron-ajax id="clearBuilds" url="/api/" method="post" handle-as="json" on-response="_onClear"></iron-ajax>
         <iron-ajax id="statusLoader" url="/api/" method="post" handle-as="json"
                    on-response="_onBuildsDownloaded"></iron-ajax>
+        <iron-ajax id="cancelBuild" url="/api/" method="post" handle-as="json"
+                   on-response="_onBuildCancelled"></iron-ajax>
 
     </template>
 </dom-module>
@@ -184,8 +189,6 @@
                 this.authenticated = true;
 
                 setTimeout(() => {
-                    console.log('opening build:' + this.routeData.buildId);
-
                     if (this.routeData.buildId) {
                         this._openBuildLog(this.routeData.buildId);
                     }
@@ -244,19 +247,45 @@
         _copyUrl() {
             navigator.clipboard.writeText(window.location)
                 .then(() => {
-                    this.errorText = "Copied url to clipboard.";
-                    this.$.toast.show();
+                    this._showToast("Copied url to clipboard.");
                 })
                 .catch(() => {
-                    this.errorText = "Failed to copy url to clipboard.";
-                    this.$.toast.show();
+                    this._showToast("Failed to copy url to clipboard.");
                 });
         }
 
         _queueAnother(e) {
             application.publish('schedule', this.build.config.id);
-            this.errorText = "Scheduled another build.";
-            this.$.toast.show();
+            this._showToast("Scheduled another build.");
+        }
+
+        _cancel(e) {
+            this.$.cancelBuild.body = JSON.stringify({
+                token: application.token,
+                target: 'builds',
+                route: 'cancel',
+                id: this.build.id
+            });
+            this.$.cancelBuild.generateRequest();
+        }
+
+        _onBuildCancelled(event, request) {
+            let status = request.response.status;
+
+            if (status === 'ACCEPTED') {
+                this._showToast('This build has been marked for cancellation.');
+            } else {
+                this._showToast('Failed to cancel the build, has it completed already?');
+            }
+        }
+
+        _isCancellable() {
+            if (this.build) {
+                let status = this.build.progress;
+                return (status === 'QUEUED' || status === 'CLONING' || status === 'BUILDING');
+            } else {
+                return false;
+            }
         }
 
         _onSearchFilter(e) {
@@ -327,9 +356,13 @@
                 this.set('route.path', this.route.path + this.build.id);
                 this._openBuildLog(this.build.id);
             } else {
-                this.errorText = "You are not authorized to view the log.";
-                this.$.toast.show();
+                this._showToast("You are not authorized to view the log.");
             }
+        }
+
+        _showToast(text) {
+            this.errorText = text;
+            this.$.toast.show();
         }
 
         _openBuildLog(buildId) {

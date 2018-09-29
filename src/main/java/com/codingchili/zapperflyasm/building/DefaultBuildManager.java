@@ -8,6 +8,8 @@ import com.codingchili.zapperflyasm.scheduling.JobQueue;
 import com.codingchili.zapperflyasm.vcs.VersionControlSystem;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.json.JsonObject;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -18,6 +20,7 @@ import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.files.Configurations;
 import com.codingchili.core.logging.Logger;
+import com.codingchili.core.protocol.Serializer;
 import com.codingchili.core.storage.*;
 
 import static com.codingchili.zapperflyasm.model.ApiRequest.ID;
@@ -35,10 +38,12 @@ public class DefaultBuildManager implements BuildManager {
     private static final int INSTANCE_UPDATE = 1000;
     private static final String CONFIG_REPOSITORY = "config.repositoryName";
     private static final String CONFIG_BRANCH = "config.branch";
+    private static final String BUS_CANCEL = "cancel";
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private static final String PROGRESS = "progress";
     private static final String INSTANCE = "instance";
     private InstanceInfo instance = InstanceInfo.get();
+    private ZapperContext core;
     private AsyncStorage<InstanceInfo> instances;
     private AsyncStorage<BuildJob> builds;
     private VersionControlSystem vcs;
@@ -50,10 +55,16 @@ public class DefaultBuildManager implements BuildManager {
     @Override
     public void init(ZapperContext core) {
         this.logger = core.logger(getClass());
+        this.core = core;
 
         vcs = core.getVcs();
         executor = core.getExecutor();
         logs = core.getLogStore();
+
+        core.bus().consumer(BUS_CANCEL, msg -> {
+           BuildJob job = Serializer.unpack((JsonObject) msg.body(), BuildJob.class);
+           executor.cancel(job.getId());
+        });
 
         // cannot run this on the event loop thread - because cluster convergence
         // blocks the vertx thread. so when a single instance goes offline
@@ -155,12 +166,17 @@ public class DefaultBuildManager implements BuildManager {
         return future;
     }
 
-    private void save(BuildJob job) {
+    private Future<Void> save(BuildJob job) {
+        Future<Void> future = Future.future();
         builds.put(job, (done) -> {
             if (done.failed()) {
                 logger.onError(done.cause());
+                future.fail(done.cause());
+            } else {
+                future.complete();
             }
         });
+        return future;
     }
 
     private void handleCompleted(AsyncResult<Void> build, BuildJob job) {
@@ -212,7 +228,10 @@ public class DefaultBuildManager implements BuildManager {
 
     @Override
     public Future<Void> cancel(BuildJob job) {
-        throw new UnsupportedOperationException("Cancelling builds not implemented yet.");
+        logs.add(job.getId(), "Requesting executor " + job.getInstance() + " to terminate process..");
+        DeliveryOptions delivery = new DeliveryOptions();
+        core.bus().publish(BUS_CANCEL, Serializer.json(job), delivery);
+        return Future.succeededFuture();
     }
 
     @Override

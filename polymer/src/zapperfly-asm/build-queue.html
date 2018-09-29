@@ -259,10 +259,6 @@
             this.creating = false;
             this.authenticated = false;
 
-            application.onAuthenticated(() => {
-                this.authenticated = true;
-            });
-
             application.onLogout(() => {
                 this.authenticated = false;
             });
@@ -281,8 +277,12 @@
             setInterval(() => {
                 this._loadQueue();
             }, 2500);
-            this._reload();
             this._loadQueue();
+
+            application.onAuthenticated(() => {
+                this.authenticated = true;
+                this._reload();
+            });
         }
 
         _queued(builds) {
@@ -442,15 +442,13 @@
         }
 
         _onConfiguration(event, request) {
-            console.log(request.response);
-            console.log('got config');
+            console.log('got config response = ' + request.response.status);
             if (request.response.collection) {
-                console.log('got config for real');
+                console.log('got config for reals');
                 this.configurations = request.response.collection;
                 this.set('configurations', request.response.collection);
                 this.notifySplices('configurations');
                 this.notifyPath('configurations');
-                console.log('configs loaded');
             }
         }
     }

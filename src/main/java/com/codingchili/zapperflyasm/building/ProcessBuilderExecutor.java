@@ -1,10 +1,7 @@
 package com.codingchili.zapperflyasm.building;
 
-import com.codingchili.zapperflyasm.model.ZapperConfig;
 import com.codingchili.zapperflyasm.exceptions.BuildExecutorException;
 import com.codingchili.zapperflyasm.model.*;
-import com.codingchili.zapperflyasm.model.BuildJob;
-import com.codingchili.zapperflyasm.model.BuildConfiguration;
 import com.codingchili.zapperflyasm.process.AsyncProcess;
 import com.codingchili.zapperflyasm.vcs.GitExecutor;
 import io.vertx.core.Future;
@@ -12,7 +9,7 @@ import io.vertx.core.WorkerExecutor;
 import io.vertx.core.buffer.Buffer;
 
 import java.io.File;
-import java.time.Instant;
+import java.util.*;
 
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
@@ -29,6 +26,7 @@ import com.codingchili.core.logging.Logger;
  */
 public class ProcessBuilderExecutor implements BuildExecutor {
     private static final String BUILD_SCRIPT_NAME = "_zapperfly";
+    private Map<String, AbstractMap.SimpleEntry<BuildJob, AsyncProcess>> processes = new HashMap<>();
     private WorkerExecutor executor;
     private CoreContext core;
     private Logger logger;
@@ -40,6 +38,20 @@ public class ProcessBuilderExecutor implements BuildExecutor {
         this.core = core;
         this.logger = core.logger(getClass());
         this.executor = core.vertx().createSharedWorkerExecutor(getClass().getSimpleName());
+    }
+
+    @Override
+    public Future<Void> cancel(String id) {
+        if (processes.containsKey(id)) {
+            AbstractMap.SimpleEntry<BuildJob, AsyncProcess> process = processes.get(id);
+
+            process.getKey().setProgress(Status.CANCELLED);
+            process.getValue().stop();
+            process.getKey().log("The process has been terminated by the executor upon user request.");
+
+            processes.remove(id);
+        }
+        return Future.succeededFuture();
     }
 
     @Override
@@ -57,6 +69,8 @@ public class ProcessBuilderExecutor implements BuildExecutor {
 
                 AsyncProcess process = new AsyncProcess(core, command)
                         .start(job.getDirectory());
+
+                processes.put(job.getId(), new AbstractMap.SimpleEntry<>(job, process));
 
                 process.monitorProcessTimeout().setHandler((done) -> {
                     if (done.succeeded()) {
