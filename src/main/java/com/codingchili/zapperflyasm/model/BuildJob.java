@@ -90,8 +90,9 @@ public class BuildJob implements Storable {
         return config;
     }
 
-    public void setConfig(BuildConfiguration config) {
+    public BuildJob setConfig(BuildConfiguration config) {
         this.config = config;
+        return this;
     }
 
     /**
@@ -149,6 +150,13 @@ public class BuildJob implements Storable {
      * @return the directory where the build is executing.
      */
     public String getDirectory() {
+        if (directory == null) {
+            String path = ZapperConfig.getEnvironment().getBuildPath();
+            if (!path.endsWith("/")) {
+                path = path + "/";
+            }
+            directory = path + id;
+        }
         return directory;
     }
 

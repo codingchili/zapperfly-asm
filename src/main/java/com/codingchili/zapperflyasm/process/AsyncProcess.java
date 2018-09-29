@@ -1,9 +1,11 @@
 package com.codingchili.zapperflyasm.process;
 
 import com.codingchili.zapperflyasm.model.ZapperConfig;
+import com.googlecode.cqengine.query.simple.In;
 import io.vertx.core.Future;
 
 import java.io.*;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -134,7 +136,8 @@ public class AsyncProcess {
      * fails if the process returns an error code. Completes with false
      * if the process has timed out.
      */
-    public Future<Boolean> monitorProcessTimeout(Supplier<Long> start) {
+    public Future<Boolean> monitorProcessTimeout() {
+        Long start = Instant.now().toEpochMilli();
         Future<Boolean> future = Future.future();
         core.periodic(() -> PROCESS_POLL_DELAY, "processPoller", (id) -> {
             try {
@@ -150,7 +153,7 @@ public class AsyncProcess {
                 }
             } catch (IllegalThreadStateException e) {
                 // process not finished yet - if timeout then fail.
-                if (timeout(start.get())) {
+                if (timeout(start)) {
                     core.cancel(id);
                     future.complete(false);
                     process.destroyForcibly();

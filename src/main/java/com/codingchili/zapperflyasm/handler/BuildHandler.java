@@ -39,6 +39,7 @@ public class BuildHandler implements CoreHandler {
     public void init(CoreContext core) {
         this.core = ZapperContext.ensure(core);
         this.manager = this.core.getJobManager();
+        protocol.authenticator(this.core.authenticator()::getRoleByRequest);
     }
 
     @Api(PUBLIC)
@@ -47,7 +48,11 @@ public class BuildHandler implements CoreHandler {
         core.getConfigurationManager().retrieveById(request.getBuildId())
                 .setHandler(done -> {
                     if (done.succeeded()) {
-                        manager.submit(done.result()).setHandler(request::result);
+                        BuildJob job = new BuildJob();
+                        job.setConfig(done.result());
+                        job.setAuthor(request.token().getDomain());
+
+                        manager.submit(job).setHandler(request::result);
                     } else {
                         request.error(done.cause());
                     }
@@ -152,9 +157,6 @@ public class BuildHandler implements CoreHandler {
 
     @Override
     public void handle(Request request) {
-        core.authenticator().getRoleByRequest(request).setHandler(done -> {
-            protocol.get(request.route(), done.result())
-                    .submit(new ApiRequest(request));
-        });
+        protocol.process(new ApiRequest(request));
     }
 }

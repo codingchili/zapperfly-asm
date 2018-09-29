@@ -1,6 +1,5 @@
 package com.codingchili.zapperflyasm.building;
 
-import com.codingchili.zapperflyasm.model.ZapperConfig;
 import com.codingchili.zapperflyasm.ZapperContext;
 import com.codingchili.zapperflyasm.logging.LogEvent;
 import com.codingchili.zapperflyasm.logging.LogStore;
@@ -21,7 +20,7 @@ import com.codingchili.core.files.Configurations;
 import com.codingchili.core.logging.Logger;
 import com.codingchili.core.storage.*;
 
-import static com.codingchili.zapperflyasm.model.ApiRequest.*;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID;
 import static com.codingchili.zapperflyasm.model.BuildJob.START;
 import static com.codingchili.zapperflyasm.model.Status.*;
 
@@ -34,7 +33,7 @@ public class DefaultBuildManager implements BuildManager {
     private static final int POLL_WAIT = 2000;
     private static final int INSTANCE_TIMEOUT = 5000;
     private static final int INSTANCE_UPDATE = 1000;
-    private static final String CONFIG_REPOSITORY = "config.repository";
+    private static final String CONFIG_REPOSITORY = "config.repositoryName";
     private static final String CONFIG_BRANCH = "config.branch";
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private static final String PROGRESS = "progress";
@@ -114,17 +113,24 @@ public class DefaultBuildManager implements BuildManager {
 
         logs.onBuildStarted(running);
 
-        // clone the repository and the branch.
-        vcs.clone(running).setHandler(clone -> {
-            if (clone.succeeded()) {
-                // cloned ok - start building.
-                executor.build(running).setHandler(
-                        (executed) -> handleCompleted(executed, running));
-            } else {
-                complete();
-                throw new CoreRuntimeException(clone.cause().getMessage());
-            }
-        });
+        if (requiresVCSCheckout(running)) {
+            // clone the repository and the branch.
+            vcs.clone(running).setHandler(clone -> {
+                if (clone.succeeded()) {
+                    // cloned ok - start building.
+                    executor.build(running).setHandler((executed) -> handleCompleted(executed, running));
+                } else {
+                    complete();
+                    throw new CoreRuntimeException(clone.cause().getMessage());
+                }
+            });
+        } else {
+            executor.build(running).setHandler((executed) -> handleCompleted(executed, running));
+        }
+    }
+
+    private boolean requiresVCSCheckout(BuildJob job) {
+        return !job.getConfig().getBranch().isEmpty();
     }
 
     private void complete() {
@@ -134,10 +140,8 @@ public class DefaultBuildManager implements BuildManager {
     }
 
     @Override
-    public Future<BuildJob> submit(BuildConfiguration config) {
+    public Future<BuildJob> submit(BuildJob job) {
         Future<BuildJob> future = Future.future();
-        BuildJob job = new BuildJob();
-        job.setConfig(config);
 
         // add the job to the queue.
         queue.submit(job).setHandler(done -> {

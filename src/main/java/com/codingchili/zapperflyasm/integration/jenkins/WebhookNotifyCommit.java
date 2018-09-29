@@ -1,8 +1,7 @@
 package com.codingchili.zapperflyasm.integration.jenkins;
 
 import com.codingchili.zapperflyasm.ZapperContext;
-import com.codingchili.zapperflyasm.model.BuildConfiguration;
-import com.codingchili.zapperflyasm.model.ZapperConfig;
+import com.codingchili.zapperflyasm.model.*;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
@@ -76,7 +75,7 @@ public class WebhookNotifyCommit implements CoreHandler {
                         // start all configurations for the given branch.
                         // more logic here would be nice, is tag, is marked for api etc.
                         configs.forEach(config -> context.getJobManager()
-                                .submit(config)
+                                .submit(new BuildJob().setConfig(config))
                                 .setHandler(request::result));
                     } else {
                         request.error(done.cause());

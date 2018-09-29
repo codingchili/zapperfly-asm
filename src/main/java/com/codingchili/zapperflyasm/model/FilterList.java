@@ -2,35 +2,44 @@ package com.codingchili.zapperflyasm.model;
 
 import java.util.*;
 
+import com.codingchili.core.protocol.Serializer;
+
 /**
  * @author Robin Duda
  *
  * Contains a list of values that may be used in filters.
  */
 public class FilterList {
-    private Set<String> branches = new HashSet<>();
-    private Set<String> repositories = new HashSet<>();
+    private Map<String, List<String>> repositories = new HashMap<>();
+
+    public FilterList() {}
 
     public FilterList(Collection<BuildConfiguration> configurations) {
         configurations.forEach(config -> {
-            branches.add(config.getBranch());
-            repositories.add(config.getRepository());
+
+            if (!config.getRepository().isEmpty()) {
+                repositories.putIfAbsent(config.getRepositoryName(), new ArrayList<>());
+            }
+
+            if (!config.getBranch().isEmpty()) {
+                repositories.get(config.getRepositoryName()).add(config.getBranch());
+            }
         });
     }
 
-    public Collection<String> getBranches() {
-        return branches;
-    }
-
-    public void setBranches(Set<String> branches) {
-        this.branches = branches;
-    }
-
-    public Collection<String> getRepositories() {
+    public Map<String, List<String>> getRepositories() {
         return repositories;
     }
 
-    public void setRepositories(Set<String> repositories) {
+    public void setRepositories(Map<String, List<String>> repositories) {
         this.repositories = repositories;
+    }
+
+    public static void main(String[] args) {
+        BuildConfiguration configuration = new BuildConfiguration();
+        configuration.setRepository("repo");
+        configuration.setBranch("branch");
+        FilterList list = new FilterList(Collections.singleton(configuration));
+        System.out.println(Serializer.json(list));
     }
 }

@@ -11,9 +11,13 @@ import io.vertx.core.Future;
 import io.vertx.core.WorkerExecutor;
 import io.vertx.core.buffer.Buffer;
 
+import java.io.File;
+import java.time.Instant;
+
 import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
+import com.codingchili.core.logging.LogMessage;
 import com.codingchili.core.logging.Logger;
 
 /**
@@ -42,6 +46,8 @@ public class ProcessBuilderExecutor implements BuildExecutor {
     public Future<Void> build(BuildJob job) {
         Future<Void> future = Future.future();
 
+        new File(job.getDirectory()).mkdirs();
+
         executor.executeBlocking(blocking -> {
             job.setProgress(Status.BUILDING);
             logEvent("buildBegin", job);
@@ -52,7 +58,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
                 AsyncProcess process = new AsyncProcess(core, command)
                         .start(job.getDirectory());
 
-                process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
+                process.monitorProcessTimeout().setHandler((done) -> {
                     if (done.succeeded()) {
                         if (done.result()) {
                             onSuccess(job);
@@ -122,10 +128,16 @@ public class ProcessBuilderExecutor implements BuildExecutor {
 
     private void logEvent(String event, BuildJob job) {
         BuildConfiguration config = job.getConfig();
-        logger.event(event)
-                .put("repo", config.getRepository())
-                .put("branch", config.getBranch())
-                .put("cmdline", config.getCmdLine())
-                .send();
+        LogMessage message = logger.event(event)
+                .put("cmdline", config.getCmdLine());
+
+        if (!config.getRepository().isEmpty()) {
+            message.put("repo", config.getRepository());
+        }
+
+        if (!config.getBranch().isEmpty()) {
+            message.put("branch", config.getBranch());
+        }
+        message.send();
     }
 }

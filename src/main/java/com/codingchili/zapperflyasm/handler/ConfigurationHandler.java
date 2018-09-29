@@ -26,12 +26,12 @@ import static com.codingchili.core.protocol.RoleMap.*;
 public class ConfigurationHandler implements CoreHandler {
     private Protocol<Request> protocol = new Protocol<>(this);
     private ConfigurationManager configurations;
-    private ZapperContext core;
 
     @Override
     public void init(CoreContext core) {
-        this.core = ZapperContext.ensure(core);
-        this.configurations = this.core.getConfigurationManager();
+        ZapperContext core1 = ZapperContext.ensure(core);
+        this.configurations = core1.getConfigurationManager();
+        protocol.authenticator(core1.authenticator()::getRoleByRequest);
     }
 
     @Override
@@ -84,9 +84,6 @@ public class ConfigurationHandler implements CoreHandler {
 
     @Override
     public void handle(Request request) {
-        core.authenticator().getRoleByRequest(request).setHandler(done -> {
-            protocol.get(request.route(), done.result())
-                    .submit(new ApiRequest(request));
-        });
+        protocol.process(new ApiRequest(request));
     }
 }

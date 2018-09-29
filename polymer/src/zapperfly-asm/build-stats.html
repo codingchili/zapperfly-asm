@@ -118,9 +118,12 @@
 
             <div id="filters">
                 <!-- repository filter -->
-                <paper-dropdown-menu id="filter-repo" label="Repository">
-                    <paper-listbox id="repositories" slot="dropdown-content" attr-for-selected="name" selected="{{routeData.repository}}">
+                <paper-dropdown-menu id="filter-repo" label="Repository" on-iron-select="_onRepoChanged">
+                    <paper-listbox id="repositories" slot="dropdown-content" attr-for-selected="name"
+                                   selected="{{routeData.repository}}">
+
                         <paper-item name="any">any</paper-item>
+
                         <template id="repositoryTemplate" is="dom-repeat" items="[[repositories]]">
                             <paper-item name="[[item]]">[[item]]</paper-item>
                         </template>
@@ -128,9 +131,12 @@
                 </paper-dropdown-menu>
 
                 <!-- branch filter -->
-                <paper-dropdown-menu id="filter-branch" label="Branch">
-                    <paper-listbox id="branches" slot="dropdown-content" attr-for-selected="name" selected="{{routeData.branch}}">
+                <paper-dropdown-menu id="filter-branch" label="Branch" on-iron-select="_onBranchChanged">
+                    <paper-listbox id="branches" slot="dropdown-content" attr-for-selected="name"
+                                   selected="{{routeData.branch}}">
+
                         <paper-item name="any">any</paper-item>
+
                         <template id="branchTemplate" is="dom-repeat" items="[[branches]]">
                             <paper-item name="[[item]]">[[item]]</paper-item>
                         </template>
@@ -402,9 +408,33 @@
         }
 
         _onFilters(event, request) {
-            let filters = request.response;
-            this.set('repositories', filters.repositories);
-            this.set('branches', filters.branches);
+            this.filter = request.response.repositories;
+            if (this.filter) {
+                this.set('repositories', Object.keys(this.filter));
+            }
+        }
+
+        _onRepoChanged(e) {
+            let repository = e.target.selectedItem.innerText;
+            this.set('repository', repository);
+            this.set('branch', 'any');
+            if (this.filter) {
+                this.set('branches', this.filter[repository]);
+                this._requestHistoryUpdate();
+            }
+        }
+
+        _onBranchChanged(e) {
+            this.set('branch', e.target.selectedItem.innerText);
+            this._requestHistoryUpdate();
+        }
+
+        _requestHistoryUpdate() {
+            console.log('trigger update');
+            application.publish('onFiltersChanged', {
+                repository: this.repository,
+                branch: this.branch
+            });
         }
 
         _updateTime() {

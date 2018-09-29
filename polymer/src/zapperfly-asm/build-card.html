@@ -146,13 +146,13 @@
                 [[build.commit]]
             </div>
             <div class="message">
-                [[build.message]]
+                {{_messageOrScript(build)}}
             </div>
             <div class="author" style$="color: {{_authorColor(build)}}">
                 [[build.author]]
             </div>
             <div class="branch">
-                [[build.config.branch]]@{{_trimRepo(build.config.repository)}}
+                {{_displayName(build.config)}}
             </div>
 
             <div class="elapsed">
@@ -238,6 +238,22 @@
 
         _toLower(string) {
             return string.toLowerCase();
+        }
+
+        _displayName(config) {
+            if (config.branch === '') {
+                return config.repositoryName;
+            } else {
+                return config.repositoryName + '@' + config.branch;
+            }
+        }
+
+        _messageOrScript(build) {
+            if (build.config.branch === '') {
+                return build.config.cmdLine.substring(0, Math.min(64, build.config.cmdLine.length));
+            } else {
+                return build.message;
+            }
         }
 
         _trimRepo(string) {

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,7 +16,9 @@ import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
 import com.codingchili.core.logging.LogMessage;
 import com.codingchili.core.logging.Logger;
+
 import com.codingchili.zapperflyasm.model.ZapperConfig;
+
 import static com.codingchili.core.configuration.CoreStrings.throwableToString;
 
 import com.codingchili.zapperflyasm.model.*;
@@ -52,7 +55,6 @@ public class GitExecutor implements VersionControlSystem {
 
         job.setStart(ZonedDateTime.now().toInstant().toEpochMilli());
         job.setProgress(Status.CLONING);
-        job.setDirectory(getDirectory(job));
         onBegin(job);
 
         executor.executeBlocking((blocking) -> {
@@ -63,7 +65,7 @@ public class GitExecutor implements VersionControlSystem {
                 AsyncProcess process = new AsyncProcess(core, command).start();
                 process.readProcessOutput(job::log, () -> !job.getProgress().equals(Status.CLONING));
 
-                process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
+                process.monitorProcessTimeout().setHandler((done) -> {
                     if (done.succeeded()) {
                         if (done.result()) {
 
@@ -122,7 +124,7 @@ public class GitExecutor implements VersionControlSystem {
                     complete.set(true);
                 }, complete::get);
 
-                process.monitorProcessTimeout(job::getStart).setHandler((done) -> {
+                process.monitorProcessTimeout().setHandler((done) -> {
                     if (done.succeeded()) {
                         if (done.result()) {
                             onHead(job);
@@ -191,14 +193,6 @@ public class GitExecutor implements VersionControlSystem {
         return future;
     }
 
-    private String getDirectory(BuildJob job) {
-        String path =  ZapperConfig.getEnvironment().getBuildPath();
-        if (!path.endsWith("/")) {
-            path = path + "/";
-        }
-        return path + job.getId();
-    }
-
     @Override
     public Future<Void> delete(BuildJob job) {
         job.log("Cleaning build directory.. " + job.getDirectory());
@@ -207,10 +201,10 @@ public class GitExecutor implements VersionControlSystem {
         core.blocking(blocking -> {
             try {
                 Files.walk(Paths.get(job.getDirectory()))
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .peek(file -> file.setWritable(true))
-                    .forEach(File::delete);
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .peek(file -> file.setWritable(true))
+                        .forEach(File::delete);
 
                 job.log("Cleaning completed.");
                 blocking.complete();

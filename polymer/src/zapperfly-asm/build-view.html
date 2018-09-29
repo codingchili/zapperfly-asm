@@ -178,6 +178,12 @@
             application.onLogout(() => {
                 this.authenticated = false;
             });
+
+            application.subscribe('onFiltersChanged', (e) => {
+                this.set('routeData.repository', e.repository);
+                this.set('routeData.branch', e.branch);
+                this._load();
+            });
         }
 
         ready() {
@@ -201,13 +207,13 @@
             if (query.length > 0) {
                 let matcher = new RegExp(query, 'i');
                 for (let build of builds) {
-                    console.log(build);
                     let repo = matcher.test(build.config.repository);
                     let branch = matcher.test(build.config.branch);
                     let message = matcher.test(build.message);
                     let author = matcher.test(build.author);
+                    let cmdLine = matcher.test(build.config.cmdLine);
 
-                    if (repo || branch || message || author) {
+                    if (repo || branch || message || author || cmdLine) {
                         results.push(build);
                     }
                 }
@@ -219,10 +225,7 @@
 
         _onSearchFilter(e) {
             if (e.keyCode === 13) {
-                console.log('perform server side search.');
                 this.query = '';
-            } else {
-                console.log('perform client side filtering');
             }
         }
 

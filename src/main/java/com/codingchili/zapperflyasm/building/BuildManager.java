@@ -26,11 +26,10 @@ public interface BuildManager {
     /**
      * Schedules a build for execution on the repo and branch in the given config.
      *
-     * @param config specifies which repo and on which branch to execute the configured
-     *               command line. Also includes the artifact output folders.
+     * @param job a new job to execute, contains the configuration to be used.
      * @return the job that was scheduled.
      */
-    Future<BuildJob> submit(BuildConfiguration config);
+    Future<BuildJob> submit(BuildJob job);
 
     /**
      * Lists all avilable instances that have joined the cluster at some point.

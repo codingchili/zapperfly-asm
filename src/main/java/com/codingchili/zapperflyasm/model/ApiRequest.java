@@ -64,8 +64,12 @@ public class ApiRequest implements RequestWrapper {
 
         config.sanitize();
 
+        // only require the other if we have at least one, allow jobs to execute without a repo.
+        if (!config.getBranch().isEmpty()) {
+            require("branch", config.getBranch());
+        }
+
         require("repository", config.getRepository());
-        require("branch", config.getBranch());
         require("cmdline", config.getCmdLine());
 
         return config;

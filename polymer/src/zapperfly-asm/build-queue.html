@@ -144,8 +144,16 @@
                                 <template is="dom-if" if="{{_isAdmin(authenticated)}}">
                                     <iron-icon on-click="_edit" class="icon" icon="icons:settings"></iron-icon>
                                 </template>
-                                <span class="branch">[[configuration.branch]]</span>
-                                <span class="repository">[[_trimRepo(configuration.repository)]]</span>
+
+                                <template is="dom-if" if="{{_isCloneable(configuration)}}">
+                                    <span class="branch">[[configuration.branch]]</span>
+                                    <span class="repository">[[_trimRepo(configuration.repository)]]</span>
+                                </template>
+
+                                <template is="dom-if" if="{{!_isCloneable(configuration)}}">
+                                    <span class="scriptName">{{_scriptName(configuration)}}</span>
+                                </template>
+
                                 <iron-icon on-click="_schedule" class="icon" icon="av:play-circle-outline"></iron-icon>
                             </paper-item>
                         </template>
@@ -162,14 +170,14 @@
 
                             <!-- paper-input is broken; unable to set text color. use iron-input. -->
                             <paper-input-container>
-                                <label slot="label">repository</label>
+                                <label slot="label">repository (url, or name for scripts.)</label>
                                 <iron-input autofocus slot="input" bind-value="{{config.repository}}">
                                     <input autofocus>
                                 </iron-input>
                             </paper-input-container>
 
                             <paper-input-container>
-                                <label slot="label">branch</label>
+                                <label slot="label">branch (optional)</label>
                                 <iron-input slot="input" bind-value="{{config.branch}}">
                                     <input>
                                 </iron-input>
@@ -288,6 +296,14 @@
             }
         }
 
+        _isCloneable(configuration) {
+            return configuration.branch !== "";
+        }
+
+        _scriptName(configuration) {
+            return (configuration.cmdLine.substring(0, Math.min(48, configuration.cmdLine.length)));
+        }
+
         _isQueueAvailable() {
             return this.started && this.authenticated;
         }
@@ -367,6 +383,10 @@
         _new() {
             this.creating = true;
             this.config = {'outputDirs': []};
+        }
+
+        _trimScript(string) {
+            return string.substring(0, Math.min(64, string.length));
         }
 
         _trimRepo(string) {
