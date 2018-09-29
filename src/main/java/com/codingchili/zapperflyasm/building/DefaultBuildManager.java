@@ -15,13 +15,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.codingchili.core.context.CoreContext;
+import com.codingchili.core.configuration.CoreStrings;
 import com.codingchili.core.context.CoreRuntimeException;
+import com.codingchili.core.files.Configurations;
 import com.codingchili.core.logging.Logger;
-import com.codingchili.core.storage.AsyncStorage;
-import com.codingchili.core.storage.SortOrder;
+import com.codingchili.core.storage.*;
 
-import static com.codingchili.zapperflyasm.model.ApiRequest.ID_BUILD;
+import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 import static com.codingchili.zapperflyasm.model.BuildJob.START;
 import static com.codingchili.zapperflyasm.model.Status.*;
 
@@ -34,6 +34,8 @@ public class DefaultBuildManager implements BuildManager {
     private static final int POLL_WAIT = 2000;
     private static final int INSTANCE_TIMEOUT = 5000;
     private static final int INSTANCE_UPDATE = 1000;
+    private static final String CONFIG_REPOSITORY = "config.repository";
+    private static final String CONFIG_BRANCH = "config.branch";
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private static final String PROGRESS = "progress";
     private static final String INSTANCE = "instance";
@@ -242,20 +244,32 @@ public class DefaultBuildManager implements BuildManager {
     }
 
     @Override
-    public Future<Collection<BuildJob>> history() {
+    public Future<Collection<BuildJob>> history(String repository, String branch) {
         Future<Collection<BuildJob>> future = Future.future();
-        builds.query(ID_BUILD).matches(".*")
-                .pageSize(24).page(0)
+        QueryBuilder<BuildJob> query = builds.query(ID);
+
+        if (isQuerying(repository)) {
+            query.and(CONFIG_REPOSITORY).equalTo(repository);
+        }
+        if (isQuerying(branch)) {
+            query.and(CONFIG_BRANCH).equalTo(branch);
+        }
+
+        query.pageSize(Configurations.storage().getMaxResults()).page(0)
                 .orderBy(START)
                 .order(SortOrder.DESCENDING)
-                .execute(query -> {
-                    if (query.succeeded()) {
-                        future.complete(query.result());
+                .execute(search -> {
+                    if (search.succeeded()) {
+                        future.complete(search.result());
                     } else {
-                        future.fail(query.cause());
+                        future.fail(search.cause());
                     }
                 });
         return future;
+    }
+
+    private boolean isQuerying(String input) {
+        return input != null && !input.isEmpty() && !CoreStrings.ANY.equalsIgnoreCase(input);
     }
 
     @Override

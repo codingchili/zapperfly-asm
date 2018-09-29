@@ -3,6 +3,13 @@
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
 <link rel="import" href="build-card.html">
 <link rel="import" href="shared-styles.html">
 
@@ -13,7 +20,7 @@
             :host {
                 display: block;
                 width: 100%;
-                height: 128px;
+                height: 164px;
                 text-align: center;
             }
 
@@ -69,7 +76,27 @@
                 text-align: left;
             }
 
+            #filters {
+                bottom: 0px;
+                position: absolute;
+                margin: auto;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            #filter-repo {
+                margin-left: 8px;
+            }
+
+            #filter-branch {
+                margin-right: 8px;
+            }
+
         </style>
+
+        <app-location route="{{route}}" use-hash-as-path></app-location>
+        <app-route route="{{route}}" pattern="/:repository/:branch" data="{{routeData}}" tail="{{subroute}}"></app-route>
 
         <paper-card elevation="1">
             <h4>Zapperfly build server 1.1.0</h4>
@@ -85,6 +112,30 @@
                     <iron-icon on-click="_loginDialog" class="icon" icon="icons:power-settings-new"></iron-icon>
                 </template>
                 <iron-icon on-click="_about" class="icon" icon="icons:info-outline"></iron-icon>
+            </div>
+
+            <!-- todo get values, todo include reset/any.-->
+
+            <div id="filters">
+                <!-- repository filter -->
+                <paper-dropdown-menu id="filter-repo" label="Repository">
+                    <paper-listbox id="repositories" slot="dropdown-content" attr-for-selected="name" selected="{{routeData.repository}}">
+                        <paper-item name="any">any</paper-item>
+                        <template id="repositoryTemplate" is="dom-repeat" items="[[repositories]]">
+                            <paper-item name="[[item]]">[[item]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+
+                <!-- branch filter -->
+                <paper-dropdown-menu id="filter-branch" label="Branch">
+                    <paper-listbox id="branches" slot="dropdown-content" attr-for-selected="name" selected="{{routeData.branch}}">
+                        <paper-item name="any">any</paper-item>
+                        <template id="branchTemplate" is="dom-repeat" items="[[branches]]">
+                            <paper-item name="[[item]]">[[item]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
             </div>
 
         </paper-card>
@@ -142,7 +193,9 @@
                     <li>added input validation for build configuration.</li>
                     <li>split the queue list API from the build list API.</li>
                     <li>support newline in logs and improved grouping of log messages.</li>
-                    <li>support building without passing the buildscript over the shell (uses a file for docker builds)</li>
+                    <li>support building without passing the buildscript over the shell (uses a file for docker
+                        builds)
+                    </li>
                     <li>fixed - full build output was not captured.</li>
                 </ul>
                 <hr>
@@ -202,7 +255,6 @@
             </div>
         </paper-dialog>
 
-
         <paper-dialog id="configure" with-backdrop>
             <iron-icon on-click="_logout" class="icon" icon="icons:power-settings-new"></iron-icon>
             <h2>Configuration</h2>
@@ -254,6 +306,10 @@
                    on-response="_onConfig" debounce-duration="300">
         </iron-ajax>
 
+        <iron-ajax id="filterLoader" method="post" url="/api/?target=config&route=filters" handle-as="json"
+                   on-response="_onFilters" debounce-duration="300" auto>
+        </iron-ajax>
+
         <iron-ajax id="loginRequest"
                    url="/api/?target=authentication&route=login&username=[[username]]&password=[[password]]"
                    handle-as="json"
@@ -286,6 +342,11 @@
             setInterval(() => {
                 this.$.jokeLoader.generateRequest();
             }, 10000);
+        }
+
+        ready() {
+            super.ready();
+            this.set('route.path', "/any/any");
         }
 
         _about() {
@@ -336,6 +397,16 @@
             this.$.configure.open();
         }
 
+        _filters() {
+            this.$.configLoader.generateRequest();
+        }
+
+        _onFilters(event, request) {
+            let filters = request.response;
+            this.set('repositories', filters.repositories);
+            this.set('branches', filters.branches);
+        }
+
         _updateTime() {
             this.time = new Date().toLocaleString();
         }
@@ -350,6 +421,4 @@
     }
 
     window.customElements.define(BuildStats.is, BuildStats);
-
-
 </script>

@@ -78,8 +78,10 @@ public interface BuildManager {
 
     /**
      * @return all builds that are either finished or in progress.
+     * @param repository the repository to get builds from, may be * or null.
+     * @param branch the branches to get builds from, may be * or null.
      */
-    Future<Collection<BuildJob>> history();
+    Future<Collection<BuildJob>> history(String repository, String branch);
 
     /**
      * Retrieves the log of the given build starting from the given line number.
