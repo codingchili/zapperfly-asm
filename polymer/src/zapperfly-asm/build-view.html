@@ -135,7 +135,7 @@
             <h2>[[_getHeader(build)]]</h2>
             <iron-icon on-click="_copyUrl" class="copy-url icon" icon="icons:content-copy"></iron-icon>
             <iron-icon on-click="_queueAnother" class="copy-url icon" icon="icons:cached"></iron-icon>
-            <template is="dom-if" if="{{_isCancellable(builds)}}">
+            <template is="dom-if" if="{{_isCancellable(build)}}">
                 <iron-icon on-click="_cancel" class="copy-url icon" icon="icons:cancel"></iron-icon>
             </template>
             <paper-dialog-scrollable id="terminal" class="log">
