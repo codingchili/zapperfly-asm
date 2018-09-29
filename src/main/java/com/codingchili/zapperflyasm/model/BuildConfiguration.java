@@ -13,7 +13,7 @@ import com.codingchili.core.storage.Storable;
  */
 public class BuildConfiguration implements Storable {
     private static final Pattern safe = Pattern.compile("[0-9A-Za-z-./_]+");
-    private static final Pattern urlsafe = Pattern.compile("((ssh|(htt(p|ps)))://[0-9A-Za-z/._:@-]+)|[a-zA-Z]+");
+    private static final Pattern urlsafe = Pattern.compile("((ssh|(htt(p|ps)))://[0-9A-Za-z/._:@-]+)|[a-zA-Z0-9 ]+");
     private List<String> outputDirs = Arrays.asList("out", "build", "target");
     private String id = UUID.randomUUID().toString();
     private boolean autoclean = false;

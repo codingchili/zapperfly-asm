@@ -352,7 +352,9 @@
 
         ready() {
             super.ready();
-            this.set('route.path', "/any/any");
+            if (!this.route.path) {
+                this.set('route.path', "/any/any/");
+            }
             this._onResumeSession();
         }
 
@@ -361,7 +363,7 @@
         }
 
         _logout() {
-            sessionStorage.removeItem('authentication');
+            localStorage.removeItem('authentication');
             this.authenticated = false;
             this.$.configure.close();
             application.logout();
@@ -382,7 +384,7 @@
         }
 
         _onResumeSession() {
-            let authentication = JSON.parse(sessionStorage.getItem('authentication'));
+            let authentication = JSON.parse(localStorage.getItem('authentication'));
             if (authentication) {
                 this._setAuthenticated(authentication);
             }
@@ -391,7 +393,7 @@
         _onLogin(event, request) {
             if (request.response.status === ACCEPTED) {
                 this._setAuthenticated(request.response);
-                sessionStorage.setItem('authentication', JSON.stringify(request.response));
+                localStorage.setItem('authentication', JSON.stringify(request.response));
                 this.$.login.close();
             } else {
                 this.password = '';

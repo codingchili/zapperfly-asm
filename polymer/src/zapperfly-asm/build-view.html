@@ -32,6 +32,7 @@
                 text-align: left;
                 margin-left: 8px;
                 margin-right: 8px;
+                margin-top: 0;
             }
 
             #spinner {
@@ -92,6 +93,11 @@
                 margin-right: 8px;
                 padding-top: 0;
             }
+
+            .copy-url {
+                margin-top: 8px;
+                margin-bottom: 2px;
+            }
         </style>
 
         <h4 class="title">
@@ -107,7 +113,8 @@
         </h4>
 
         <app-location route="{{route}}" use-hash-as-path></app-location>
-        <app-route route="{{route}}" pattern="/:repository/:branch" data="{{routeData}}" tail="{{subroute}}"></app-route>
+        <app-route route="{{route}}" pattern="/:repository/:branch/:buildId" data="{{routeData}}"
+                   tail="{{subroute}}"></app-route>
 
         <paper-input-container class="search">
             <label slot="label">filter</label>
@@ -125,7 +132,9 @@
         </template>
 
         <paper-dialog id="logDialog" with-backdrop modal>
-            <h2>[[build.message]]</h2>
+            <h2>[[_getHeader(build)]]</h2>
+            <iron-icon on-click="_copyUrl" class="copy-url icon" icon="icons:content-copy"></iron-icon>
+            <iron-icon on-click="_queueAnother" class="copy-url icon" icon="icons:cached"></iron-icon>
             <paper-dialog-scrollable id="terminal" class="log">
                 <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
 
@@ -173,6 +182,14 @@
 
             application.onAuthenticated(() => {
                 this.authenticated = true;
+
+                setTimeout(() => {
+                    console.log('opening build:' + this.routeData.buildId);
+
+                    if (this.routeData.buildId) {
+                        this._openBuildLog(this.routeData.buildId);
+                    }
+                }, 1);
             });
 
             application.onLogout(() => {
@@ -190,7 +207,7 @@
             super.ready();
 
             setInterval(() => {
-                if (this.build != null) {
+                if (this.buildId != null) {
                     this._reload();
                 }
             }, this.LOG_POLL);
@@ -198,6 +215,7 @@
             setInterval(() => {
                 this._load();
             }, 2500);
+
             this._load();
         }
 
@@ -223,9 +241,42 @@
             return results;
         }
 
+        _copyUrl() {
+            navigator.clipboard.writeText(window.location)
+                .then(() => {
+                    this.errorText = "Copied url to clipboard.";
+                    this.$.toast.show();
+                })
+                .catch(() => {
+                    this.errorText = "Failed to copy url to clipboard.";
+                    this.$.toast.show();
+                });
+        }
+
+        _queueAnother(e) {
+            application.publish('schedule', this.build.config.id);
+            this.errorText = "Scheduled another build.";
+            this.$.toast.show();
+        }
+
         _onSearchFilter(e) {
             if (e.keyCode === 13) {
                 this.query = '';
+            }
+        }
+
+        _getHeader(build) {
+            if (build) {
+                let config = build.config;
+                if (config.branch) {
+                    return build.message;
+                } else {
+                    if (config.repositoryName) {
+                        return config.repositoryName;
+                    } else {
+                        return config.cmdLine.substring(0, Math.min(48, config.cmdLine.length));
+                    }
+                }
             }
         }
 
@@ -242,10 +293,10 @@
             this.builds = request.response.list;
 
             // update the build information after opening the log.
-            if (this.build != null && this.builds) {
-                for (let i in this.builds) {
-                    if (this.builds[i].id === this.build.id) {
-                        this.build = this.builds[i];
+            if (this.builds) {
+                for (let build of this.builds) {
+                    if (build.id === this.buildId) {
+                        this.set('build', build);
                     }
                 }
             }
@@ -272,17 +323,31 @@
 
         _onClick(e) {
             if (this._canViewLog()) {
-                this.loading = true;
-                this.line = 0;
-                this.offset = 0;
                 this.build = e.model.build;
-                this.log = [];
-                this.$.logDialog.open();
-                this._reload();
+                this.set('route.path', this.route.path + this.build.id);
+                this._openBuildLog(this.build.id);
             } else {
                 this.errorText = "You are not authorized to view the log.";
                 this.$.toast.show();
             }
+        }
+
+        _openBuildLog(buildId) {
+            // try to find the build if its already loaded.
+            if (this.build === null && this.builds) {
+                for (let build of this.builds) {
+                    if (build.id === buildId) {
+                        this.set('build', build);
+                    }
+                }
+            }
+            this.buildId = buildId;
+            this.loading = true;
+            this.line = 0;
+            this.offset = 0;
+            this.log = [];
+            this.$.logDialog.open();
+            this._reload();
         }
 
         _canViewLog() {
@@ -346,7 +411,7 @@
         _reload() {
             this.$.logLoader.body = JSON.stringify({
                 token: application.token,
-                id: this.build.id,
+                id: this.buildId,
                 offset: this.offset,
                 target: 'builds',
                 route: 'log'
@@ -359,7 +424,8 @@
         }
 
         _close() {
-            this.build = null;
+            this.set('routeData.buildId', null);
+            this.buildId = null;
         }
     }
 

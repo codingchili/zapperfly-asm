@@ -115,6 +115,11 @@
                 margin-top: 0px;
             }
 
+            .scriptName {
+                position: absolute;
+                left: 61px;
+            }
+
         </style>
 
         <span class="title">
@@ -261,14 +266,14 @@
             application.onLogout(() => {
                 this.authenticated = false;
             });
-        }
 
-        _queued(builds) {
-            if (builds.length === 0) {
-                return "empty";
-            } else {
-                return builds.length + " in queue"
-            }
+            application.subscribe('schedule', (configId) => {
+                for (let config of this.configurations) {
+                    if (config.id === configId) {
+                        this._schedule({model: {configuration: config}});
+                    }
+                }
+            });
         }
 
         ready() {
@@ -278,6 +283,14 @@
             }, 2500);
             this._reload();
             this._loadQueue();
+        }
+
+        _queued(builds) {
+            if (builds.length === 0) {
+                return "empty";
+            } else {
+                return builds.length + " in queue"
+            }
         }
 
         _loadQueue() {
@@ -301,7 +314,11 @@
         }
 
         _scriptName(configuration) {
-            return (configuration.cmdLine.substring(0, Math.min(48, configuration.cmdLine.length)));
+            if (configuration.repository) {
+                return configuration.repository;
+            } else {
+                return (configuration.cmdLine.substring(0, Math.min(48, configuration.cmdLine.length)));
+            }
         }
 
         _isQueueAvailable() {
@@ -323,11 +340,6 @@
         _start() {
             this.editing = false;
             this.creating = false;
-            this.$.configurationLoader.body = JSON.stringify({
-                token: application.token,
-                target: 'config',
-                route: 'list'
-            });
             this.$.configurationLoader.generateRequest();
             this.$.queue.open();
         }
@@ -367,6 +379,13 @@
         _reload() {
             this.editing = false;
             this.creating = false;
+
+            this.$.configurationLoader.body = JSON.stringify({
+                token: application.token,
+                target: 'config',
+                route: 'list'
+            });
+
             this.$.configurationLoader.generateRequest();
         }
 
@@ -423,11 +442,15 @@
         }
 
         _onConfiguration(event, request) {
+            console.log(request.response);
+            console.log('got config');
             if (request.response.collection) {
+                console.log('got config for real');
                 this.configurations = request.response.collection;
                 this.set('configurations', request.response.collection);
                 this.notifySplices('configurations');
                 this.notifyPath('configurations');
+                console.log('configs loaded');
             }
         }
     }
