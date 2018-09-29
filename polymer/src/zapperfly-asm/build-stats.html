@@ -353,6 +353,7 @@
         ready() {
             super.ready();
             this.set('route.path', "/any/any");
+            this._onResumeSession();
         }
 
         _about() {
@@ -360,6 +361,7 @@
         }
 
         _logout() {
+            sessionStorage.removeItem('authentication');
             this.authenticated = false;
             this.$.configure.close();
             application.logout();
@@ -379,18 +381,30 @@
             }
         }
 
+        _onResumeSession() {
+            let authentication = JSON.parse(sessionStorage.getItem('authentication'));
+            if (authentication) {
+                this._setAuthenticated(authentication);
+            }
+        }
+
         _onLogin(event, request) {
             if (request.response.status === ACCEPTED) {
-                application.authenticated(request.response);
-                this.authenticated = true;
-                this.user = application.token.domain;
-                this.role = application.token.properties['role'];
+                this._setAuthenticated(request.response);
+                sessionStorage.setItem('authentication', JSON.stringify(request.response));
                 this.$.login.close();
             } else {
                 this.password = '';
                 this.errorText = request.response.message;
                 this.$.toast.open();
             }
+        }
+
+        _setAuthenticated(response) {
+            application.authenticated(response);
+            this.authenticated = true;
+            this.user = application.token.domain;
+            this.role = application.token.properties['role'];
         }
 
         _configure() {
@@ -430,7 +444,6 @@
         }
 
         _requestHistoryUpdate() {
-            console.log('trigger update');
             application.publish('onFiltersChanged', {
                 repository: this.repository,
                 branch: this.branch
