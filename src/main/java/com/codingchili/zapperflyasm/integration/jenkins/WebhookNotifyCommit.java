@@ -22,7 +22,7 @@ import static com.codingchili.core.protocol.RoleMap.USER;
  * <p>
  * Handles triggering of builds that uses the jenkins webhook format.
  * <p>
- * example: HTTP/1.1 GET /jenkins/git/notifyCommit?branch=master&repository=url-to-repo
+ * example: HTTP/1.1 GET /jenkins/git/notifyCommit?branches=master&repository=url-to-repo
  * <p>
  * - This requires an existing config for the branch and repository.
  * - The server triggering the build must have its hostname added to the whitelist.
