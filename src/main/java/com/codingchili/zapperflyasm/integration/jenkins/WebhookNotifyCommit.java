@@ -6,6 +6,7 @@ import com.codingchili.zapperflyasm.model.ZapperConfig;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,11 +20,11 @@ import static com.codingchili.core.protocol.RoleMap.USER;
 
 /**
  * @author Robin Duda
- *
+ * <p>
  * Handles triggering of builds that uses the jenkins webhook format.
- *
+ * <p>
  * example: HTTP/1.1 GET /jenkins/git/notifyCommit?branch=master&repository=url-to-repo
- *
+ * <p>
  * - This requires an existing config for the branch and repository.
  * - The server triggering the build must have its hostname added to the whitelist.
  */
@@ -66,12 +67,17 @@ public class WebhookNotifyCommit implements CoreHandler {
         build.setBranch(data.getString(BRANCHES));
 
         context.getConfigurationManager()
-                .retrieveByRepositoryAndBranch(
+                .retrieveByQuery(
                         data.getString(URL),
                         data.getString(BRANCHES))
                 .setHandler(done -> {
                     if (done.succeeded()) {
-                        context.getJobManager().submit(done.result()).setHandler(request::result);
+                        Collection<BuildConfiguration> configs = done.result();
+                        // start all configurations for the given branch.
+                        // more logic here would be nice, is tag, is marked for api etc.
+                        configs.forEach(config -> context.getJobManager()
+                                .submit(config)
+                                .setHandler(request::result));
                     } else {
                         request.error(done.cause());
                     }

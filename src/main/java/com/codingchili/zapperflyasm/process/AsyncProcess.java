@@ -97,6 +97,11 @@ public class AsyncProcess {
 
                     String line = nextLine + new String(buffer);
 
+                    if (line.startsWith("\n")) {
+                        // skip leading newlines.
+                        line = line.replaceFirst("\n", "");
+                    }
+
                     if (line.contains("\n")) {
                         nextLine = line.substring(line.lastIndexOf("\n"), line.length());
                         line = line.substring(0, line.lastIndexOf("\n"));

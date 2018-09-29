@@ -1,11 +1,9 @@
 package com.codingchili.zapperflyasm.handler;
 
 import com.codingchili.zapperflyasm.ZapperContextMock;
-import com.codingchili.zapperflyasm.handler.BuildHandler;
 import com.codingchili.zapperflyasm.model.*;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.BuildConfiguration;
-import com.codingchili.zapperflyasm.logging.LogEvent;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -97,7 +95,7 @@ public class BuildHandlerTest {
             // not implemented yet - expect an error.
             test.assertEquals(ERROR, status);
             async.complete();
-        }, new JsonObject().put(ID_BUILD, TEST_ID)));
+        }, new JsonObject().put(ID, TEST_ID)));
     }
 
     @Test
@@ -106,10 +104,10 @@ public class BuildHandlerTest {
 
         handler.status(request((response, status) -> {
             test.assertEquals(ACCEPTED, status);
-            test.assertEquals(TEST_ID, response.getString(ID_BUILD));
+            test.assertEquals(TEST_ID, response.getString(ID));
             async.complete();
         }, new JsonObject()
-                .put(ID_BUILD, TEST_ID)));
+                .put(ID, TEST_ID)));
     }
 
     @Test
@@ -153,7 +151,7 @@ public class BuildHandlerTest {
             test.assertEquals(ACCEPTED, status);
             async.complete();
         }, new JsonObject()
-                .put(ID_BUILD, TEST_ID)));
+                .put(ID, TEST_ID)));
     }
 
 
@@ -182,7 +180,7 @@ public class BuildHandlerTest {
             test.assertEquals(ACCEPTED, status);
             async.complete();
         }, new JsonObject()
-                .put(ID_BUILD, TEST_ID)));
+                .put(ID, TEST_ID)));
     }
 
     @Test

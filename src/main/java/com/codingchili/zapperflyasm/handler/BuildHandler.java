@@ -44,7 +44,7 @@ public class BuildHandler implements CoreHandler {
     @Api(PUBLIC)
     @Description("Schedules a new build on the given repo and branch.")
     public void submit(ApiRequest request) {
-        core.getConfigurationManager().retrieveByRepositoryAndBranch(request.getRepository(), request.getBranch())
+        core.getConfigurationManager().retrieveById(request.getBuildId())
                 .setHandler(done -> {
                     if (done.succeeded()) {
                         manager.submit(done.result()).setHandler(request::result);
@@ -105,7 +105,7 @@ public class BuildHandler implements CoreHandler {
     @Api(PUBLIC)
     @Description("Lists all builds that has been executed on the server.")
     public void list(ApiRequest request) {
-        manager.history().setHandler(done -> {
+        manager.history(request.getRepository(), request.getBranch()).setHandler(done -> {
             if (done.succeeded()) {
                 request.write(buildsToList(done.result()));
             } else {

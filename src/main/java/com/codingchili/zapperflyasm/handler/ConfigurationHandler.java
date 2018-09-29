@@ -14,8 +14,7 @@ import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 
-import static com.codingchili.core.protocol.RoleMap.ADMIN;
-import static com.codingchili.core.protocol.RoleMap.USER;
+import static com.codingchili.core.protocol.RoleMap.*;
 
 /**
  * @author Robin Duda
@@ -56,7 +55,19 @@ public class ConfigurationHandler implements CoreHandler {
     @Api
     @Description("Removes configuration for the given repository and branch.")
     public void remove(ApiRequest request) {
-        configurations.removeByRepositoryAndBranch(request.getRepository(), request.getBranch()).setHandler(request::result);
+        configurations.removeById(request.getConfigId()).setHandler(request::result);
+    }
+
+    @Api(PUBLIC)
+    @Description("Lists values that are valid for use in a query filter.")
+    public void filters(ApiRequest request) {
+        configurations.retrieveAll().setHandler(done -> {
+            if (done.succeeded()) {
+                request.write(new FilterList(done.result()));
+            } else {
+                request.result(done);
+            }
+        });
     }
 
     @Api(USER)

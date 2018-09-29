@@ -5,6 +5,10 @@
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="build-view">
@@ -37,9 +41,8 @@
             }
 
             .history {
-                position: absolute;
-                margin-left: 6px;
-                margin-top: -2px;
+                width: 100%;
+                margin-top: -28px;
             }
 
             #spinner {
@@ -76,9 +79,22 @@
             .empty {
                 opacity: var(--opacity);
             }
+
+            .title {
+                text-align: left;
+                margin-left: 8px;
+                margin-bottom: 0px;
+            }
+
+            .search {
+                text-align: left;
+                margin-left: 8px;
+                margin-right: 8px;
+                padding-top: 0;
+            }
         </style>
 
-        <h4>
+        <h4 class="title">
             Build history
 
             <template is="dom-if" if="[[!started]]">
@@ -90,7 +106,17 @@
             </template>
         </h4>
 
-        <template is="dom-repeat" items="{{builds}}" as="build">
+        <app-location route="{{route}}" use-hash-as-path></app-location>
+        <app-route route="{{route}}" pattern="/:repository/:branch" data="{{routeData}}" tail="{{subroute}}"></app-route>
+
+        <paper-input-container class="search">
+            <label slot="label">filter</label>
+            <iron-input on-keydown="_onSearchFilter" autofocus slot="input" bind-value="{{query}}">
+                <input autofocus>
+            </iron-input>
+        </paper-input-container>
+
+        <template is="dom-repeat" items="{{_filter(builds, query)}}" as="build">
             <build-card on-click="_onClick" build="[[build]]"></build-card>
         </template>
 
@@ -143,6 +169,7 @@
             this.build = null;
             this.builds = [];
             this.log = [];
+            this.query = '';
 
             application.onAuthenticated(() => {
                 this.authenticated = true;
@@ -166,6 +193,37 @@
                 this._load();
             }, 2500);
             this._load();
+        }
+
+        _filter(builds, query) {
+            let results = [];
+
+            if (query.length > 0) {
+                let matcher = new RegExp(query, 'i');
+                for (let build of builds) {
+                    console.log(build);
+                    let repo = matcher.test(build.config.repository);
+                    let branch = matcher.test(build.config.branch);
+                    let message = matcher.test(build.message);
+                    let author = matcher.test(build.author);
+
+                    if (repo || branch || message || author) {
+                        results.push(build);
+                    }
+                }
+            } else {
+                results = builds;
+            }
+            return results;
+        }
+
+        _onSearchFilter(e) {
+            if (e.keyCode === 13) {
+                console.log('perform server side search.');
+                this.query = '';
+            } else {
+                console.log('perform client side filtering');
+            }
         }
 
         _canDelete() {
@@ -194,7 +252,9 @@
             this.$.statusLoader.body = JSON.stringify({
                 token: application.token,
                 target: 'builds',
-                route: 'list'
+                route: 'list',
+                repository: this.routeData.repository,
+                branch: this.routeData.branch
             });
             this.$.statusLoader.generateRequest();
         }
@@ -234,7 +294,7 @@
             let events = request.response.collection;
 
             // on first load show all items at once.
-            if (this.offset == 0) {
+            if (this.offset === 0) {
                 this.log.push(...events);
                 this._updateLog();
             } else {
@@ -244,7 +304,7 @@
                 for (let i in events) {
                     let event = events[i];
                     setTimeout(() => {
-                        if (current.id == this.build.id) {
+                        if (this.build != null && current.id === this.build.id) {
                             this.log.push(event);
                             this._updateLog();
                         }
@@ -259,10 +319,15 @@
         }
 
         _updateLog() {
+            let terminal = this.$.terminal.$.scrollable;
+            let autoscroll = (terminal.scrollHeight - terminal.scrollTop === terminal.clientHeight);
+
             this.notifySplices('log');
             this.$.logDialog.notifyResize();
             setTimeout(() => {
-                this.$.terminal.$.scrollable.scrollTop = Number.MAX_SAFE_INTEGER;
+                if (autoscroll) {
+                    this.$.terminal.$.scrollable.scrollTop = Number.MAX_SAFE_INTEGER;
+                }
             }, 1);
         }
 

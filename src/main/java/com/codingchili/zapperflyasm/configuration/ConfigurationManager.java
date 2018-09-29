@@ -22,19 +22,17 @@ public interface ConfigurationManager {
     /**
      * Removes configuration for the given repo and branch.
      *
-     * @param repository the repo to remove configuration for.
-     * @param branch     the branch to remove configuration for.
+     * @param id of the configuration to remove.
      */
-    Future<Void> removeByRepositoryAndBranch(String repository, String branch);
+    Future<Void> removeById(String id);
 
     /**
      * Retrieves configuration for the given repo and branch.
      *
-     * @param repository the repository to retrieve config of.
-     * @param branch     the branch to retrieve config of.
+     * @param id of the configuration to use for executing.
      * @return build configuration for the given combination of repo and branch.
      */
-    Future<BuildConfiguration> retrieveByRepositoryAndBranch(String repository, String branch);
+    Future<BuildConfiguration> retrieveById(String id);
 
     /**
      * Lists all available configurations.
@@ -43,4 +41,12 @@ public interface ConfigurationManager {
      */
     Future<Collection<BuildConfiguration>> retrieveAll();
 
+    /**
+     * Lists all configurations for the given repository and branch.
+     *
+     * @param repository the repository the configuration is valid for.
+     * @param branch the branch the configuration is valid for.
+     * @return all configurations that matches the query.
+     */
+    Future<Collection<BuildConfiguration>> retrieveByQuery(String repository, String branch);
 }

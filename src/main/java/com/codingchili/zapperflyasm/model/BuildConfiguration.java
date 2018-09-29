@@ -1,7 +1,6 @@
 package com.codingchili.zapperflyasm.model;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import com.codingchili.core.context.CoreRuntimeException;
@@ -16,6 +15,7 @@ public class BuildConfiguration implements Storable {
     private static final Pattern safe = Pattern.compile("[0-9A-Za-z-./_]+");
     private static final Pattern urlsafe = Pattern.compile("(ssh|(htt(p|ps)))://[0-9A-Za-z/._:@-]+");
     private List<String> outputDirs = Arrays.asList("out", "build", "target");
+    private String id = UUID.randomUUID().toString();
     private boolean autoclean = false;
     private String dockerImage = "";
     private String repository = "";
@@ -101,18 +101,11 @@ public class BuildConfiguration implements Storable {
      * @return the unique id of the configuration.
      */
     public String getId() {
-        return toKey(repository, branch);
+        return id;
     }
 
-    /**
-     * Converts the given repo and branch into a unique identifier for the config.
-     *
-     * @param repository the name of the repository.
-     * @param branch     the name of the branch.
-     * @return a unique key.
-     */
-    public static String toKey(String repository, String branch) {
-        return repository + "@" + branch;
+    public void setId(String id) {
+        this.id = id;
     }
 
     /**

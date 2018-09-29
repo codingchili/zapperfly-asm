@@ -7,9 +7,12 @@ import java.util.Collection;
 
 import com.codingchili.core.storage.AsyncStorage;
 
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_BRANCH;
+import static com.codingchili.zapperflyasm.model.ApiRequest.ID_REPO;
+
 /**
  * @author Robin Duda
- *
+ * <p>
  * Manages the branch/repo configurations for building.
  */
 public class DefaultConfigurationManager implements ConfigurationManager {
@@ -32,16 +35,16 @@ public class DefaultConfigurationManager implements ConfigurationManager {
     }
 
     @Override
-    public Future<Void> removeByRepositoryAndBranch(String repository, String branch) {
+    public Future<Void> removeById(String configId) {
         Future<Void> future = Future.future();
-        configurations.remove(BuildConfiguration.toKey(repository, branch), future);
+        configurations.remove(configId, future);
         return future;
     }
 
     @Override
-    public Future<BuildConfiguration> retrieveByRepositoryAndBranch(String repository, String branch) {
+    public Future<BuildConfiguration> retrieveById(String configId) {
         Future<BuildConfiguration> future = Future.future();
-        configurations.get(BuildConfiguration.toKey(repository, branch), future);
+        configurations.get(configId, future);
         return future;
     }
 
@@ -49,6 +52,18 @@ public class DefaultConfigurationManager implements ConfigurationManager {
     public Future<Collection<BuildConfiguration>> retrieveAll() {
         Future<Collection<BuildConfiguration>> future = Future.future();
         configurations.values(future);
+        return future;
+    }
+
+    @Override
+    public Future<Collection<BuildConfiguration>> retrieveByQuery(String repository, String branch) {
+        Future<Collection<BuildConfiguration>> future = Future.future();
+
+        configurations
+                .query(ID_REPO).equalTo(repository)
+                .and(ID_BRANCH).equalTo(branch)
+                .execute(future);
+
         return future;
     }
 }

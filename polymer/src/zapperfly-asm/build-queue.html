@@ -32,14 +32,15 @@
             }
 
             .title {
-                text-align: center;
+                text-align: left;
                 display: block;
+                margin-left: 12px;
             }
 
             .build {
                 cursor: pointer;
-                margin-left: 10px;
-                position: absolute;
+                width: 100%;
+                top: -18px;
             }
 
             #spinner {
@@ -106,6 +107,8 @@
 
             .empty {
                 opacity: var(--opacity);
+                margin-bottom: 12px;
+                display: block;
             }
 
             .icon-button {
@@ -213,12 +216,10 @@
             </div>
         </paper-dialog>
 
+        <span class="empty">{{_queued(builds)}}</span>
+
         <template is="dom-repeat" items="[[builds]]" as="build">
             <build-card build="[[build]]"></build-card>
-        </template>
-
-        <template is="dom-if" if="{{_isEmpty(builds)}}">
-            <span class="empty">empty</span>
         </template>
 
         <paper-toast id="toast" text="[[errorText]]"></paper-toast>
@@ -254,11 +255,20 @@
             });
         }
 
+        _queued(builds) {
+            if (builds.length === 0) {
+                return "empty";
+            } else {
+                return builds.length + " in queue"
+            }
+        }
+
         ready() {
             super.ready();
             setInterval(() => {
                 this._loadQueue();
             }, 2500);
+            this._reload();
             this._loadQueue();
         }
 
@@ -310,14 +320,14 @@
             this.config = e.model.configuration;
             this.branch = this.config.branch;
             this.repository = this.config.repository;
+            this.id = this.config.id;
             this.editing = true;
         }
 
         _delete() {
             this.$.deleteConfig.body = JSON.stringify({
                 token: application.token,
-                branch: this.branch,
-                repository: this.repository,
+                id: this.id,
                 target: 'config',
                 route: 'remove'
             });
@@ -372,10 +382,11 @@
             let config = e.model.configuration;
             this.branch = config.branch;
             this.repository = config.repository;
+            this.id = config.id;
+
             this.$.buildScheduler.body = JSON.stringify({
                 token: application.token,
-                branch: this.branch,
-                repository: this.repository,
+                id: this.id,
                 target: 'builds',
                 route: 'submit'
             });
