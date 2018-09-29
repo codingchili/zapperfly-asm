@@ -170,10 +170,11 @@
 
             <template is="dom-if" if="{{_cancellable(build)}}">
                 <div id="cancel" class="cancel">
-                    <iron-icon class="icon" icon="icons:close"></iron-icon>
+                    <!-- hide the icon until stopping builds are supported. -->
+                    <!--<iron-icon class="icon" icon="icons:close"></iron-icon>
                     <paper-tooltip for="cancel" position="bottom" animation-delay="0">
                         cancels the build
-                    </paper-tooltip>
+                    </paper-tooltip>-->
                 </div>
             </template>
 
