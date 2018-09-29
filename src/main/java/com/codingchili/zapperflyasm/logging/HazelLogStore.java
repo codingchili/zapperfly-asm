@@ -27,7 +27,22 @@ public class HazelLogStore extends AbstractBuildLogger implements LogStore {
     private HazelLogStore(CoreContext context) {
         this.context = context;
         this.logger = context.logger(getClass());
-        addListener(this);
+        addListener(new BuildEventListener() {
+            @Override
+            public void onBuildStarted(BuildJob job) {
+                add(job.getId(), "Build starting on executor '" + InstanceInfo.get().getId() + "' ..");
+            }
+
+            @Override
+            public void onBuildQueued(BuildJob job) {
+                add(job.getId(), "Build " + job.getId() + " queued.");
+            }
+
+            @Override
+            public void onBuildExecutorOffline(BuildJob job) {
+                add(job.getId(), String.format("'%s' has gone offline - build failed.", job.getInstance()));
+            }
+        });
     }
 
     /**
@@ -88,20 +103,5 @@ public class HazelLogStore extends AbstractBuildLogger implements LogStore {
             blocking.complete();
         }, future);
         return future;
-    }
-
-    @Override
-    public void onBuildStarted(BuildJob job) {
-        add(job.getId(), "Build starting on executor '" + InstanceInfo.get().getId() + "' ..");
-    }
-
-    @Override
-    public void onBuildQueued(BuildJob job) {
-        add(job.getId(), "Build " + job.getId() + " queued.");
-    }
-
-    @Override
-    public void onBuildExecutorOffline(BuildJob job) {
-        add(job.getId(), String.format("'%s' has gone offline - build failed.", job.getInstance()));
     }
 }

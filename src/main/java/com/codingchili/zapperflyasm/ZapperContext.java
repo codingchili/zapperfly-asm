@@ -62,7 +62,7 @@ public class ZapperContext extends SystemContext {
                 zapper.executor = new ProcessBuilderExecutor(core);
                 zapper.vcs = new GitExecutor(core);
 
-                DefaultBuildManager manager = new DefaultBuildManager(zapper);
+                DefaultBuildManager manager = new DefaultBuildManager();
 
                 manager.setInstances(instances);
                 manager.setBuilds(builds);
@@ -79,7 +79,7 @@ public class ZapperContext extends SystemContext {
                     if (logStore.succeeded()) {
                         zapper.logStore = logStore.result();
 
-                        manager.start();
+                        manager.init(zapper);
                         future.complete(zapper);
                     } else {
                         throw new CoreRuntimeException(logStore.cause());

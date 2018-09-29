@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.listener.*;
 import com.codingchili.core.listener.transport.RestRequest;
-import com.codingchili.core.logging.Logger;
 
 /**
  * @author Robin Duda

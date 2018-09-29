@@ -45,9 +45,9 @@ public class ZapperContextMock extends ZapperContext {
 
         ZapperConfig.setStoragePlugin(JsonMap.class);
         ZapperConfig config = ZapperConfig.get();
-        config.getEnvironment().setBuildPath("test/resources/");
-        config.getEnvironment().setTimeoutSeconds(3);
-        config.getEnvironment().setInstanceName(Environment.hostname().orElse("zap.instance.1"));
+        ZapperConfig.getEnvironment().setBuildPath("test/resources/");
+        ZapperConfig.getEnvironment().setTimeoutSeconds(3);
+        ZapperConfig.getEnvironment().setInstanceName(Environment.hostname().orElse("zap.instance.1"));
 
         mock.configs = getMap(BuildConfiguration.class);
         mock.builds = getMap(BuildJob.class);
@@ -57,13 +57,15 @@ public class ZapperContextMock extends ZapperContext {
         mock.executor = new BuildExecutorMock(true);
         mock.vcs = new VCSMock(mock);
 
-        DefaultBuildManager manager = new DefaultBuildManager(mock);
+        DefaultBuildManager manager = new DefaultBuildManager();
 
         manager.setQueue(new JobQueueMock());
         manager.setBuilds(mock.builds);
         manager.setInstances(mock.instances);
 
+        manager.init(mock);
         mock.manager = manager;
+
         return Future.succeededFuture(mock);
     }
 

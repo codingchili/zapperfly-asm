@@ -1,5 +1,6 @@
 package com.codingchili.zapperflyasm.building;
 
+import com.codingchili.zapperflyasm.ZapperContext;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.InstanceInfo;
 import com.codingchili.zapperflyasm.model.BuildConfiguration;
@@ -15,6 +16,12 @@ import java.util.List;
  * Interface for the build manager.
  */
 public interface BuildManager {
+
+    /**
+     * Called when the context is loaded.
+     * @param zapper the zapper context to be used for this manager.
+     */
+    void init(ZapperContext zapper);
 
     /**
      * Schedules a build for execution on the repo and branch in the given config.

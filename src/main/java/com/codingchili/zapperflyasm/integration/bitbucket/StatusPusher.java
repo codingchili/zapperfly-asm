@@ -5,6 +5,7 @@ import com.codingchili.zapperflyasm.logging.BuildEventListener;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.ZapperConfig;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.vertx.core.http.HttpClientOptions;
 
 import java.util.Base64;
 
@@ -33,7 +34,7 @@ public class StatusPusher implements BuildEventListener, CoreService {
 
     @Override
     public void onBuildQueued(BuildJob job) {
-        updateStatus(job);
+        //updateStatus(job); -- cannot update the status here because the commit id is not available.
     }
 
     @Override
@@ -54,17 +55,22 @@ public class StatusPusher implements BuildEventListener, CoreService {
                             (bitbucket.getUser() + ":" + bitbucket.getPass()).getBytes()
                     );
 
-            context.vertx().createHttpClient()
+            context.vertx().createHttpClient(getHttpOptions())
                     .post(bitbucket.getPort(),
                             bitbucket.getHost(),
-                            bitbucket.getApi() + job.getCommit(),
+                            bitbucket.getApi() + job.getFullCommit(),
                             response -> {
-                                job.log(String.format("BitBucket %s server responded with '%d - %s' to status update.",
-                                        getClass().getSimpleName(),
-                                        response.statusCode(),
-                                        response.statusMessage()));
 
-                                response.bodyHandler(body -> job.log(body.toString()));
+                                if (response.statusCode() >= 400 || bitbucket.isDebug()) {
+                                    job.log(String.format("BitBucket %s server responded with '%d - %s' to status update.",
+                                            getClass().getSimpleName(),
+                                            response.statusCode(),
+                                            response.statusMessage()));
+                                }
+
+                                if (bitbucket.isDebug()) {
+                                    response.bodyHandler(body -> job.log(body.toString()));
+                                }
                             })
                     .putHeader(HttpHeaderNames.AUTHORIZATION, "Basic " + authentication)
                     .end(Serializer.buffer(new StatusUpdate(job, instances)));
@@ -73,12 +79,16 @@ public class StatusPusher implements BuildEventListener, CoreService {
         logStatusUpdate(job);
     }
 
+    private HttpClientOptions getHttpOptions() {
+        return new HttpClientOptions().setSsl(bitbucket.isSsl());
+    }
+
     private void logStatusUpdate(BuildJob job) {
         job.log(
-                String.format("BitBucket %s updated status of build '%s' to %s ..",
+                String.format("BitBucket %s updating status of build '%s' to %s ..",
                         getClass().getSimpleName(),
                         job.getId(),
-                        job.getProgress().name()
+                        BitbucketBuildStatus.fromBuildStatus(job.getProgress()).name()
                 )
         );
     }

@@ -39,7 +39,7 @@ public class StatusUpdate {
 
         state = BitbucketBuildStatus.fromBuildStatus(job.getProgress());
         key = job.getId();
-        name = job.getMessage();
+        name = String.format("%s - %s", job.getMessage(), job.getAuthor());
         description = String.format("executing on zapperfly instance %s [%s]",
                 job.getInstance(), job.getProgress());
     }

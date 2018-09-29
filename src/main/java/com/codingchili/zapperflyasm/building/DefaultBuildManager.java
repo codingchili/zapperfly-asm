@@ -37,32 +37,23 @@ public class DefaultBuildManager implements BuildManager {
     private ScheduledExecutorService thread = Executors.newSingleThreadScheduledExecutor();
     private static final String PROGRESS = "progress";
     private static final String INSTANCE = "instance";
-    private ZapperConfig config = ZapperConfig.get();
     private InstanceInfo instance = InstanceInfo.get();
-    private VersionControlSystem vcs;
     private AsyncStorage<InstanceInfo> instances;
     private AsyncStorage<BuildJob> builds;
+    private VersionControlSystem vcs;
     private BuildExecutor executor;
     private JobQueue queue;
     private LogStore logs;
-    private ZapperContext core;
     private Logger logger;
 
-    /**
-     * Creates a new clustered job manager.
-     *
-     * @param core the core context.
-     */
-    public DefaultBuildManager(CoreContext core) {
-        this.core = ZapperContext.ensure(core);
+    @Override
+    public void init(ZapperContext core) {
         this.logger = core.logger(getClass());
 
-        vcs = this.core.getVcs();
-        executor = this.core.getExecutor();
-        logs = this.core.getLogStore();
-    }
+        vcs = core.getVcs();
+        executor = core.getExecutor();
+        logs = core.getLogStore();
 
-    public void start() {
         // cannot run this on the event loop thread - because cluster convergence
         // blocks the vertx thread. so when a single instance goes offline
         // all other instances will be falsely detected as offline.
@@ -96,7 +87,7 @@ public class DefaultBuildManager implements BuildManager {
                 if (done.succeeded() && done.result() != null) {
                     BuildJob job = done.result();
                     job.setProgress(CLONING);
-                    job.setInstance(config.getEnvironment().getInstanceName());
+                    job.setInstance(ZapperConfig.getEnvironment().getInstanceName());
 
                     builds.put(job, (save) -> {
                         if (save.succeeded()) {

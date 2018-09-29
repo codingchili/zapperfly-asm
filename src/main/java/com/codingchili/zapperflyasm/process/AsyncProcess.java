@@ -18,8 +18,8 @@ import com.codingchili.core.logging.Logger;
  * Process helper methods for managing processes asynchronously..
  */
 public class AsyncProcess {
-    private static final int PROCESS_POLL_DELAY = 1000;
-    private static final int LOG_DELAY = 100;
+    private static final int PROCESS_POLL_DELAY = 500;
+    private static final int LOG_DELAY = 50;
     private int timeout = ZapperConfig.getEnvironment().getTimeoutSeconds();
     private CoreContext core;
     private Logger logger;
@@ -71,45 +71,55 @@ public class AsyncProcess {
      * @param done   indiciates when the process is done.
      */
     public void readProcessOutput(Consumer<String> reader, Supplier<Boolean> done) {
+        processOutput(reader, done);
         core.periodic(() -> LOG_DELAY, "processReader", (id) -> {
-
             if (done.get()) {
                 core.cancel(id);
-            } else {
-                InputStream std = process.getInputStream();
-                InputStream err = process.getErrorStream();
+            }
+            processOutput(reader, done);
+        });
+    }
 
-                Consumer<InputStream> log = (stream) -> {
-                    try {
-                        byte[] buffer = new byte[stream.available()];
-                        stream.read(buffer, 0, buffer.length);
+    private void processOutput(Consumer<String> reader, Supplier<Boolean> done) {
+        if (done.get()) {
+            if (nextLine.trim().length() > 0) {
+                reader.accept(nextLine);
+                nextLine = "";
+            }
+        } else {
+            InputStream std = process.getInputStream();
+            InputStream err = process.getErrorStream();
 
-                        String line = nextLine + new String(buffer);
-
-                        if (line.contains("\n")) {
-                            nextLine = line.substring(line.lastIndexOf("\n"), line.length());
-                            line = line.substring(0, line.lastIndexOf("\n"));
-                            reader.accept(line);
-                        } else {
-                            nextLine = line;
-                        }
-                    } catch (IOException e) {
-                        logger.onError(e);
-                    }
-                };
+            Consumer<InputStream> log = (stream) -> {
                 try {
-                    if (std.available() > 0) {
-                        log.accept(std);
-                    }
-                    if (err.available() > 0) {
-                        log.accept(err);
+                    byte[] buffer = new byte[stream.available()];
+                    stream.read(buffer, 0, buffer.length);
+
+                    String line = nextLine + new String(buffer);
+
+                    if (line.contains("\n")) {
+                        nextLine = line.substring(line.lastIndexOf("\n"), line.length());
+                        line = line.substring(0, line.lastIndexOf("\n"));
+                        reader.accept(line);
+                    } else {
+                        nextLine = line;
                     }
                 } catch (IOException e) {
                     logger.onError(e);
                 }
-
+            };
+            try {
+                if (std.available() > 0) {
+                    log.accept(std);
+                }
+                if (err.available() > 0) {
+                    log.accept(err);
+                }
+            } catch (IOException e) {
+                logger.onError(e);
             }
-        });
+
+        }
     }
 
     /**

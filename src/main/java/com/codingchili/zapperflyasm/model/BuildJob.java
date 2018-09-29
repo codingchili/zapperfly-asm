@@ -26,6 +26,8 @@ public class BuildJob implements Storable {
     private String commit;
     private Status progress = Status.QUEUED;
     private String directory;
+    private String author;
+    private String fullCommit;
 
     public BuildJob() {
     }
@@ -152,6 +154,28 @@ public class BuildJob implements Storable {
 
     public void setDirectory(String directory) {
         this.directory = directory;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    /**
+     * @return the author of the commit.
+     */
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setFullCommit(String fullCommit) {
+        this.fullCommit = fullCommit;
+    }
+
+    /**
+     * @return the full commit hash that triggered the build.
+     */
+    public String getFullCommit() {
+        return fullCommit;
     }
 
     @Override

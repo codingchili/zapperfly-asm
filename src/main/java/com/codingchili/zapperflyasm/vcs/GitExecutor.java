@@ -69,12 +69,12 @@ public class GitExecutor implements VersionControlSystem {
 
                             // cloning competed - get the revision number.
                             head(job).setHandler(head -> {
-                                if (head.failed()) {
-                                    logger.onError(head.cause());
-                                    blocking.fail(head.cause());
-                                } else {
+                                if (head.succeeded()) {
                                     onCloned(job);
                                     blocking.complete();
+                                } else {
+                                    logger.onError(head.cause());
+                                    blocking.fail(head.cause());
                                 }
                             });
 
@@ -118,11 +118,7 @@ public class GitExecutor implements VersionControlSystem {
                 AtomicBoolean complete = new AtomicBoolean(false);
 
                 process.readProcessOutput((line) -> {
-                    String commit = line.split(" ")[0];
-                    job.log(line);
-                    job.setCommit(commit);
-                    job.setMessage(line.replace(commit, "").trim());
-                    job.save();
+                    updateJobDetails(job, line);
                     complete.set(true);
                 }, complete::get);
 
@@ -149,8 +145,26 @@ public class GitExecutor implements VersionControlSystem {
         return future;
     }
 
+    private void updateJobDetails(BuildJob job, String line) {
+        String commit = line.substring(0, line.indexOf(" "));
+        line = line.replaceFirst(commit, "").trim();
+
+        String author = line.substring(line.lastIndexOf("|"), line.length()).replaceFirst("\\|", "");
+        String message = line.replaceFirst("\\|" + author, "").trim();
+        String abbreviated = commit.substring(0, 7);
+
+        job.log(String.format("%s - %s | %s", abbreviated, message, author));
+        job.setAuthor(author);
+        job.setCommit(abbreviated);
+        job.setFullCommit(commit);
+        job.setMessage(message);
+        job.save();
+    }
+
     private String getHeadCommand(BuildJob job) {
-        return String.format("git -C %s show --oneline -s", job.getDirectory());
+        // git log --format="format:%H %s |%an" -1
+        //57a774cb050d812387dd940ca00a950ad5597145 fix: REST webhook URL mapping to git/notifyCommit (core upgrade.) |Robin Duda
+        return String.format("git -C %s log --format='format:%%H %%s |%%an' -1", job.getDirectory());
     }
 
     @Override
@@ -178,7 +192,11 @@ public class GitExecutor implements VersionControlSystem {
     }
 
     private String getDirectory(BuildJob job) {
-        return ZapperConfig.getEnvironment().getBuildPath() + "/" + job.getId();
+        String path =  ZapperConfig.getEnvironment().getBuildPath();
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
+        return path + job.getId();
     }
 
     @Override

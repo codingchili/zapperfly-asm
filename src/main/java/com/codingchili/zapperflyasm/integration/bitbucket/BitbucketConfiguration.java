@@ -6,6 +6,8 @@ package com.codingchili.zapperflyasm.integration.bitbucket;
  * Configuration for uploading build status to bitbucket server.
  */
 public class BitbucketConfiguration {
+    private boolean ssl = true;
+    private boolean debug = false;
     private String user;
     private String pass;
     private String api;
@@ -65,5 +67,27 @@ public class BitbucketConfiguration {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    /**
+     * @return true if TLS must be used for the connection.
+     */
+    public boolean isSsl() {
+        return ssl;
+    }
+
+    public void setSsl(boolean ssl) {
+        this.ssl = ssl;
+    }
+
+    /**
+     * @return if true emits additional information into the build log.
+     */
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 }
