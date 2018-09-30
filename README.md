@@ -44,7 +44,7 @@ Download the latest release from [releases](https://github.com/codingchili/zappe
 - running builds in docker containers.
 - tune workload per instance based on number of parallel builds.
 - support for role-base authentication
-- downloading of build artifacts (TBD - for now include the distribution in the build script.)
+- basic plugin system for integrations
 
 There are three levels of authorization,
 
@@ -52,14 +52,11 @@ There are three levels of authorization,
 - user: may view build logs and start builds.
 - public: may view the build queue and build history - no build logs.
 
-Features not implemented 😐
-- bugs.
-
 # Background
 Build servers are often hard to setup and involves some serious configuration overhead. The purpose of the zapperfly assembly server is 
 to provide the simplest build server experience there is, with clustering. To simplify installation, minimal environmental dependencies 
-are required. An optimal installation experience should include no more than installing Java. As its 2018 already, the application will
-be packaged with a web interface. A very snazzy web interface, 2018-style web-components in action. 🐇
+are required. An optimal installation experience should include no more than installing Java. We aim to make the core product small
+enough so that you can modify it according to your own needs. 🐇
 
 # Makes use of
 This project makes use of chili-core, which means that vertx and hazelcast is on your classpath. What a boon!😵🌟
@@ -70,4 +67,4 @@ The MIT License (MIT) Copyright (c) 2018 Robin Duda
 See: LICENSE.md
 
 # Contributing
-yes, please. :smile_cat:  :cherry_blossom:
+pull requests, code reviews, feature suggestions and more welcome. :smile_cat:  :cherry_blossom:
