@@ -1,10 +1,8 @@
 package com.codingchili.zapperflyasm.model;
 
-import com.codingchili.zapperflyasm.controller.ZapperConfig;
 import com.sun.management.OperatingSystemMXBean;
 
 import java.lang.management.ManagementFactory;
-import java.util.UUID;
 
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.storage.Storable;
@@ -15,18 +13,28 @@ import com.codingchili.core.storage.Storable;
  * Contains information about an executor that is online.
  */
 public class InstanceInfo implements Storable {
+    private static InstanceInfo info = new InstanceInfo();
     private String instance;
+    private String webserver;
     private boolean online = true;
     private double cpu = 0.0;
     private double mem = 0.0;
     private int builds = 0;
+    private int webserverPort;
     private int capacity;
     private long updated;
 
+    /**
+     * @return the instance information.
+     */
+    public static InstanceInfo get() {
+        return info;
+    }
+
     public InstanceInfo() {
         ZapperConfig config = ZapperConfig.get();
-        instance = config.getInstanceName();
-        capacity = config.getCapacity();
+        instance = config.getEnvironment().getInstanceName();
+        capacity = config.getEnvironment().getCapacity();
     }
 
     public InstanceInfo setId(String id) {
@@ -56,6 +64,28 @@ public class InstanceInfo implements Storable {
     public InstanceInfo setCapacity(int capacity) {
         this.capacity = capacity;
         return this;
+    }
+
+    /**
+     * @return URL to the webserver - unset if not running webserver.
+     */
+    public String getWebserver() {
+        return webserver;
+    }
+
+    public void setWebserver(String webserver) {
+        this.webserver = webserver;
+    }
+
+    /**
+     * @return the port that the webserver is running on, 0 if not.
+     */
+    public int getWebserverPort() {
+        return webserverPort;
+    }
+
+    public void setWebserverPort(int webserverPort) {
+        this.webserverPort = webserverPort;
     }
 
     /**
@@ -122,5 +152,13 @@ public class InstanceInfo implements Storable {
                     .getOperatingSystemMXBean();
         }
         return mxBean;
+    }
+
+    /**
+     * Called if the instance is started with website enabled.
+     */
+    public void setWebsiteEnabled(int port) {
+        webserver = Environment.hostname().orElse("localhost");
+        webserverPort = port;
     }
 }

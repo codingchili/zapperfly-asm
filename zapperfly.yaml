@@ -1,12 +1,27 @@
 ---
 users:
-timeoutSeconds: 300
-tokenSecret: "5ieoj2+huRF1vedTkotXQPZgSh8N5VbiWwLbfVYSVJrfPdmQA5uiqwQrjbOMFpC3"
-buildPath: "builds/"
-dockerLine: "docker run -e TERM='dumb' -w /tmp/build/ -v '$directory:/tmp/build' --rm\
-  \ $image /tmp/build/$script"
-groupName: "zapperfly-builds"
-windowsShell: "powershell.exe -Command"
-unixShell: "/bin/bash -E"
-instanceName:
-capacity: 2
+- role: "user"
+  username: "test"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$rY9ud8apKhYIN0jHX0jL+Q$aQN647bSnieMQ0OqWQlOU92rcvs0xzKyNy+EX3Gs2E0"
+- role: "admin"
+  username: "root"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$rplsqTZrrcbLzc7R7NuVIg$3NSJssOIEva636AGyQ4NoQi69JbbqiemqmAhPLX8ryQ"
+- role: "user"
+  username: "test1"
+- role: "user"
+  username: "user"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$fIEZsCJZE2tTOtetW2mTpw$bgOsbYS/pmWmm3O/dsoiELmM2OcUP9Li4CyvKqfCiak"
+integrations:
+  com.codingchili.zapperflyasm.integration.jenkins.WebhookNotifyCommit:
+    whitelist:
+    - "127.0.0.1"
+    - "localhost"
+    - "0:0:0:0:0:0:0:1"
+  com.codingchili.zapperflyasm.integration.bitbucket.StatusPusher:
+    api: "/11qxr211/"
+    host: "requestbin.fullcontact.com"
+    ssl: false
+    port: 80
+    debug: false
+    username: "api"
+    password: "api"

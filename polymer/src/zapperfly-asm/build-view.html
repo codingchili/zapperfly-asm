@@ -5,6 +5,10 @@
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="build-view">
@@ -28,6 +32,7 @@
                 text-align: left;
                 margin-left: 8px;
                 margin-right: 8px;
+                margin-top: 0;
             }
 
             #spinner {
@@ -37,9 +42,8 @@
             }
 
             .history {
-                position: absolute;
-                margin-left: 6px;
-                margin-top: -2px;
+                width: 100%;
+                margin-top: -28px;
             }
 
             #spinner {
@@ -76,9 +80,27 @@
             .empty {
                 opacity: var(--opacity);
             }
+
+            .title {
+                text-align: left;
+                margin-left: 8px;
+                margin-bottom: 0px;
+            }
+
+            .search {
+                text-align: left;
+                margin-left: 8px;
+                margin-right: 8px;
+                padding-top: 0;
+            }
+
+            .copy-url {
+                margin-top: 8px;
+                margin-bottom: 2px;
+            }
         </style>
 
-        <h4>
+        <h4 class="title">
             Build history
 
             <template is="dom-if" if="[[!started]]">
@@ -90,7 +112,18 @@
             </template>
         </h4>
 
-        <template is="dom-repeat" items="{{builds}}" as="build">
+        <app-location route="{{route}}" use-hash-as-path></app-location>
+        <app-route route="{{route}}" pattern="/:repository/:branch/:buildId" data="{{routeData}}"
+                   tail="{{subroute}}"></app-route>
+
+        <paper-input-container class="search">
+            <label slot="label">filter</label>
+            <iron-input on-keydown="_onSearchFilter" autofocus slot="input" bind-value="{{query}}">
+                <input autofocus>
+            </iron-input>
+        </paper-input-container>
+
+        <template is="dom-repeat" items="{{_filter(builds, query)}}" as="build">
             <build-card on-click="_onClick" build="[[build]]"></build-card>
         </template>
 
@@ -99,7 +132,12 @@
         </template>
 
         <paper-dialog id="logDialog" with-backdrop modal>
-            <h2>[[build.message]]</h2>
+            <h2>[[_getHeader(build)]]</h2>
+            <iron-icon on-click="_copyUrl" class="copy-url icon" icon="icons:content-copy"></iron-icon>
+            <iron-icon on-click="_queueAnother" class="copy-url icon" icon="icons:cached"></iron-icon>
+            <template is="dom-if" if="{{_isCancellable(build)}}">
+                <iron-icon on-click="_cancel" class="copy-url icon" icon="icons:cancel"></iron-icon>
+            </template>
             <paper-dialog-scrollable id="terminal" class="log">
                 <paper-spinner id="spinner" active="[[loading]]"></paper-spinner>
 
@@ -121,6 +159,8 @@
         <iron-ajax id="clearBuilds" url="/api/" method="post" handle-as="json" on-response="_onClear"></iron-ajax>
         <iron-ajax id="statusLoader" url="/api/" method="post" handle-as="json"
                    on-response="_onBuildsDownloaded"></iron-ajax>
+        <iron-ajax id="cancelBuild" url="/api/" method="post" handle-as="json"
+                   on-response="_onBuildCancelled"></iron-ajax>
 
     </template>
 </dom-module>
@@ -143,13 +183,26 @@
             this.build = null;
             this.builds = [];
             this.log = [];
+            this.query = '';
 
             application.onAuthenticated(() => {
                 this.authenticated = true;
+
+                setTimeout(() => {
+                    if (this.routeData.buildId) {
+                        this._openBuildLog(this.routeData.buildId);
+                    }
+                }, 1);
             });
 
             application.onLogout(() => {
                 this.authenticated = false;
+            });
+
+            application.subscribe('onFiltersChanged', (e) => {
+                this.set('routeData.repository', e.repository);
+                this.set('routeData.branch', e.branch);
+                this._load();
             });
         }
 
@@ -157,7 +210,7 @@
             super.ready();
 
             setInterval(() => {
-                if (this.build != null) {
+                if (this.buildId != null) {
                     this._reload();
                 }
             }, this.LOG_POLL);
@@ -165,7 +218,95 @@
             setInterval(() => {
                 this._load();
             }, 2500);
+
             this._load();
+        }
+
+        _filter(builds, query) {
+            let results = [];
+
+            if (query.length > 0) {
+                let matcher = new RegExp(query, 'i');
+                for (let build of builds) {
+                    let repo = matcher.test(build.config.repository);
+                    let branch = matcher.test(build.config.branch);
+                    let message = matcher.test(build.message);
+                    let author = matcher.test(build.author);
+                    let cmdLine = matcher.test(build.config.cmdLine);
+
+                    if (repo || branch || message || author || cmdLine) {
+                        results.push(build);
+                    }
+                }
+            } else {
+                results = builds;
+            }
+            return results;
+        }
+
+        _copyUrl() {
+            navigator.clipboard.writeText(window.location)
+                .then(() => {
+                    this._showToast("Copied url to clipboard.");
+                })
+                .catch(() => {
+                    this._showToast("Failed to copy url to clipboard.");
+                });
+        }
+
+        _queueAnother(e) {
+            application.publish('schedule', this.build.config.id);
+            this._showToast("Scheduled another build.");
+        }
+
+        _cancel(e) {
+            this.$.cancelBuild.body = JSON.stringify({
+                token: application.token,
+                target: 'builds',
+                route: 'cancel',
+                id: this.build.id
+            });
+            this.$.cancelBuild.generateRequest();
+        }
+
+        _onBuildCancelled(event, request) {
+            let status = request.response.status;
+
+            if (status === 'ACCEPTED') {
+                this._showToast('This build has been marked for cancellation.');
+            } else {
+                this._showToast('Failed to cancel the build, has it completed already?');
+            }
+        }
+
+        _isCancellable() {
+            if (this.build) {
+                let status = this.build.progress;
+                return (status === 'QUEUED' || status === 'CLONING' || status === 'BUILDING');
+            } else {
+                return false;
+            }
+        }
+
+        _onSearchFilter(e) {
+            if (e.keyCode === 13) {
+                this.query = '';
+            }
+        }
+
+        _getHeader(build) {
+            if (build) {
+                let config = build.config;
+                if (config.branch) {
+                    return build.message;
+                } else {
+                    if (config.repositoryName) {
+                        return config.repositoryName;
+                    } else {
+                        return config.cmdLine.substring(0, Math.min(48, config.cmdLine.length));
+                    }
+                }
+            }
         }
 
         _canDelete() {
@@ -181,10 +322,10 @@
             this.builds = request.response.list;
 
             // update the build information after opening the log.
-            if (this.build != null && this.builds) {
-                for (let i in this.builds) {
-                    if (this.builds[i].id === this.build.id) {
-                        this.build = this.builds[i];
+            if (this.builds) {
+                for (let build of this.builds) {
+                    if (build.id === this.buildId) {
+                        this.set('build', build);
                     }
                 }
             }
@@ -194,7 +335,9 @@
             this.$.statusLoader.body = JSON.stringify({
                 token: application.token,
                 target: 'builds',
-                route: 'list'
+                route: 'list',
+                repository: this.routeData.repository,
+                branch: this.routeData.branch
             });
             this.$.statusLoader.generateRequest();
         }
@@ -209,17 +352,35 @@
 
         _onClick(e) {
             if (this._canViewLog()) {
-                this.loading = true;
-                this.line = 0;
-                this.offset = 0;
                 this.build = e.model.build;
-                this.log = [];
-                this.$.logDialog.open();
-                this._reload();
+                this.set('route.path', this.route.path + this.build.id);
+                this._openBuildLog(this.build.id);
             } else {
-                this.errorText = "You are not authorized to view the log.";
-                this.$.toast.show();
+                this._showToast("You are not authorized to view the log.");
             }
+        }
+
+        _showToast(text) {
+            this.errorText = text;
+            this.$.toast.show();
+        }
+
+        _openBuildLog(buildId) {
+            // try to find the build if its already loaded.
+            if (this.build === null && this.builds) {
+                for (let build of this.builds) {
+                    if (build.id === buildId) {
+                        this.set('build', build);
+                    }
+                }
+            }
+            this.buildId = buildId;
+            this.loading = true;
+            this.line = 0;
+            this.offset = 0;
+            this.log = [];
+            this.$.logDialog.open();
+            this._reload();
         }
 
         _canViewLog() {
@@ -234,7 +395,7 @@
             let events = request.response.collection;
 
             // on first load show all items at once.
-            if (this.offset == 0) {
+            if (this.offset === 0) {
                 this.log.push(...events);
                 this._updateLog();
             } else {
@@ -244,7 +405,7 @@
                 for (let i in events) {
                     let event = events[i];
                     setTimeout(() => {
-                        if (current.id == this.build.id) {
+                        if (this.build != null && current.id === this.build.id) {
                             this.log.push(event);
                             this._updateLog();
                         }
@@ -259,10 +420,15 @@
         }
 
         _updateLog() {
+            let terminal = this.$.terminal.$.scrollable;
+            let autoscroll = (terminal.scrollHeight - terminal.scrollTop === terminal.clientHeight);
+
             this.notifySplices('log');
             this.$.logDialog.notifyResize();
             setTimeout(() => {
-                this.$.terminal.$.scrollable.scrollTop = Number.MAX_SAFE_INTEGER;
+                if (autoscroll) {
+                    this.$.terminal.$.scrollable.scrollTop = Number.MAX_SAFE_INTEGER;
+                }
             }, 1);
         }
 
@@ -278,7 +444,7 @@
         _reload() {
             this.$.logLoader.body = JSON.stringify({
                 token: application.token,
-                id: this.build.id,
+                id: this.buildId,
                 offset: this.offset,
                 target: 'builds',
                 route: 'log'
@@ -291,7 +457,8 @@
         }
 
         _close() {
-            this.build = null;
+            this.set('routeData.buildId', null);
+            this.buildId = null;
         }
     }
 

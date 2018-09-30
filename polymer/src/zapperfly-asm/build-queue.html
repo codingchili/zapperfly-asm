@@ -32,14 +32,15 @@
             }
 
             .title {
-                text-align: center;
+                text-align: left;
                 display: block;
+                margin-left: 12px;
             }
 
             .build {
                 cursor: pointer;
-                margin-left: 10px;
-                position: absolute;
+                width: 100%;
+                top: -18px;
             }
 
             #spinner {
@@ -106,10 +107,17 @@
 
             .empty {
                 opacity: var(--opacity);
+                margin-bottom: 12px;
+                display: block;
             }
 
             .icon-button {
                 margin-top: 0px;
+            }
+
+            .scriptName {
+                position: absolute;
+                left: 61px;
             }
 
         </style>
@@ -141,8 +149,16 @@
                                 <template is="dom-if" if="{{_isAdmin(authenticated)}}">
                                     <iron-icon on-click="_edit" class="icon" icon="icons:settings"></iron-icon>
                                 </template>
-                                <span class="branch">[[configuration.branch]]</span>
-                                <span class="repository">[[_trimRepo(configuration.repository)]]</span>
+
+                                <template is="dom-if" if="{{_isCloneable(configuration)}}">
+                                    <span class="branch">[[configuration.branch]]</span>
+                                    <span class="repository">[[_trimRepo(configuration.repository)]]</span>
+                                </template>
+
+                                <template is="dom-if" if="{{!_isCloneable(configuration)}}">
+                                    <span class="scriptName">{{_scriptName(configuration)}}</span>
+                                </template>
+
                                 <iron-icon on-click="_schedule" class="icon" icon="av:play-circle-outline"></iron-icon>
                             </paper-item>
                         </template>
@@ -159,14 +175,14 @@
 
                             <!-- paper-input is broken; unable to set text color. use iron-input. -->
                             <paper-input-container>
-                                <label slot="label">repository</label>
+                                <label slot="label">repository (url, or name for scripts.)</label>
                                 <iron-input autofocus slot="input" bind-value="{{config.repository}}">
                                     <input autofocus>
                                 </iron-input>
                             </paper-input-container>
 
                             <paper-input-container>
-                                <label slot="label">branch</label>
+                                <label slot="label">branch (optional)</label>
                                 <iron-input slot="input" bind-value="{{config.branch}}">
                                     <input>
                                 </iron-input>
@@ -213,12 +229,10 @@
             </div>
         </paper-dialog>
 
+        <span class="empty">{{_queued(builds)}}</span>
+
         <template is="dom-repeat" items="[[builds]]" as="build">
             <build-card build="[[build]]"></build-card>
-        </template>
-
-        <template is="dom-if" if="{{_isEmpty(builds)}}">
-            <span class="empty">empty</span>
         </template>
 
         <paper-toast id="toast" text="[[errorText]]"></paper-toast>
@@ -245,12 +259,16 @@
             this.creating = false;
             this.authenticated = false;
 
-            application.onAuthenticated(() => {
-                this.authenticated = true;
-            });
-
             application.onLogout(() => {
                 this.authenticated = false;
+            });
+
+            application.subscribe('schedule', (configId) => {
+                for (let config of this.configurations) {
+                    if (config.id === configId) {
+                        this._schedule({model: {configuration: config}});
+                    }
+                }
             });
         }
 
@@ -260,6 +278,19 @@
                 this._loadQueue();
             }, 2500);
             this._loadQueue();
+
+            application.onAuthenticated(() => {
+                this.authenticated = true;
+                this._reload();
+            });
+        }
+
+        _queued(builds) {
+            if (builds.length === 0) {
+                return "empty";
+            } else {
+                return builds.length + " in queue"
+            }
         }
 
         _loadQueue() {
@@ -275,6 +306,18 @@
             this.started = true;
             if (request.response.list) {
                 this.set('builds', request.response.list);
+            }
+        }
+
+        _isCloneable(configuration) {
+            return configuration.branch !== "";
+        }
+
+        _scriptName(configuration) {
+            if (configuration.repository) {
+                return configuration.repository;
+            } else {
+                return (configuration.cmdLine.substring(0, Math.min(48, configuration.cmdLine.length)));
             }
         }
 
@@ -297,11 +340,6 @@
         _start() {
             this.editing = false;
             this.creating = false;
-            this.$.configurationLoader.body = JSON.stringify({
-                token: application.token,
-                target: 'config',
-                route: 'list'
-            });
             this.$.configurationLoader.generateRequest();
             this.$.queue.open();
         }
@@ -310,14 +348,14 @@
             this.config = e.model.configuration;
             this.branch = this.config.branch;
             this.repository = this.config.repository;
+            this.id = this.config.id;
             this.editing = true;
         }
 
         _delete() {
             this.$.deleteConfig.body = JSON.stringify({
                 token: application.token,
-                branch: this.branch,
-                repository: this.repository,
+                id: this.id,
                 target: 'config',
                 route: 'remove'
             });
@@ -341,6 +379,13 @@
         _reload() {
             this.editing = false;
             this.creating = false;
+
+            this.$.configurationLoader.body = JSON.stringify({
+                token: application.token,
+                target: 'config',
+                route: 'list'
+            });
+
             this.$.configurationLoader.generateRequest();
         }
 
@@ -359,6 +404,10 @@
             this.config = {'outputDirs': []};
         }
 
+        _trimScript(string) {
+            return string.substring(0, Math.min(64, string.length));
+        }
+
         _trimRepo(string) {
             if (string && string.indexOf('/') > -1) {
                 let parts = string.split('/');
@@ -372,10 +421,11 @@
             let config = e.model.configuration;
             this.branch = config.branch;
             this.repository = config.repository;
+            this.id = config.id;
+
             this.$.buildScheduler.body = JSON.stringify({
                 token: application.token,
-                branch: this.branch,
-                repository: this.repository,
+                id: this.id,
                 target: 'builds',
                 route: 'submit'
             });
@@ -392,7 +442,9 @@
         }
 
         _onConfiguration(event, request) {
+            console.log('got config response = ' + request.response.status);
             if (request.response.collection) {
+                console.log('got config for reals');
                 this.configurations = request.response.collection;
                 this.set('configurations', request.response.collection);
                 this.notifySplices('configurations');

@@ -1,6 +1,9 @@
 package com.codingchili.zapperflyasm.commandline;
 
-import com.codingchili.zapperflyasm.controller.*;
+import com.codingchili.zapperflyasm.model.*;
+import com.codingchili.zapperflyasm.ZapperContext;
+import com.codingchili.zapperflyasm.handler.*;
+import com.codingchili.zapperflyasm.integration.jenkins.WebhookNotifyCommit;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.GroupConfig;
 import io.vertx.core.*;
@@ -10,7 +13,8 @@ import java.util.*;
 
 import com.codingchili.core.configuration.Environment;
 import com.codingchili.core.context.*;
-import com.codingchili.core.listener.MultiHandler;
+import com.codingchili.core.listener.*;
+import com.codingchili.core.logging.Logger;
 
 import static com.codingchili.core.files.Configurations.system;
 
@@ -20,15 +24,19 @@ import static com.codingchili.core.files.Configurations.system;
  * Command for starting the application and parsing some commandline options.
  */
 public class StartCommand implements Command {
-    private ZapperConfig config = ZapperConfig.get();
     private static final String WEBSITE = "--website";
     private static final String DEFAULT_PORT = "443";
     private static final String NAME = "--name";
     private static final String GROUP = "--group";
     private static final String CAPACITY = "--capacity";
+    private static final String PLUGIN_LOADED = "plugin.load";
+    private static final String CLASS = "class";
+    private EnvironmentConfiguration environment;
+    private Logger logger;
 
     @Override
     public void execute(Future<CommandResult> start, CommandExecutor executor) {
+        environment = ZapperConfig.getEnvironment();
         loadInstanceName(executor);
         loadInstanceGroup(executor);
         loadCapacity(executor);
@@ -58,16 +66,47 @@ public class StartCommand implements Command {
     }
 
     private void startup(Future<CommandResult> start, CommandExecutor executor, ZapperContext context) {
+        logger = context.logger(getClass());
+
         List<Future> deployments = new ArrayList<>();
-        MultiHandler api = new MultiHandler(
-                new BuildHandler(),
-                new ConfigurationHandler(),
-                new AuthenticationHandler());
+        List<CoreHandler> handlers = new ArrayList<CoreHandler>() {{
+            add(new BuildHandler());
+            add(new ConfigurationHandler());
+            add(new AuthenticationHandler());
+        }};
+
+        ZapperConfig.get().configuredPlugins().forEach(className -> {
+            try {
+                Class<?> pluginClass = Class.<CoreDeployment>forName(className);
+                CoreDeployment plugin = (CoreDeployment) pluginClass.newInstance();
+
+                if (plugin instanceof CoreHandler) {
+                    // if the plugin is a handler we'll add it to the MultiHandler.
+                    handlers.add((CoreHandler) plugin);
+                    logger.event(PLUGIN_LOADED).put(CLASS, className).send();
+                } else {
+                    context.deploy(className).setHandler(done -> {
+                        if (done.failed()) {
+                            logger.onError(done.cause());
+                        }
+                    });
+                }
+
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                context.close();
+                throw new CoreRuntimeException(e);
+            }
+        });
+
+        MultiHandler api = new MultiHandler(handlers);
 
         if (executor.hasProperty(WEBSITE)) {
-            deployments.add(context.listener(() -> new Webserver(
-                    Integer.parseInt(executor.getProperty(WEBSITE)
-                            .orElse(DEFAULT_PORT)))
+            int port = Integer.parseInt(executor.getProperty(WEBSITE)
+                    .orElse(DEFAULT_PORT));
+
+            InstanceInfo.get().setWebsiteEnabled(port);
+
+            deployments.add(context.listener(() -> new Webserver(port)
                     .handler(api)));
         } else {
             deployments.add(context.handler(() -> api));
@@ -84,18 +123,18 @@ public class StartCommand implements Command {
     }
 
     private void loadCapacity(CommandExecutor executor) {
-        config.setCapacity(Integer.parseInt(executor.getProperty(CAPACITY).orElse(
-                (ZapperConfig.get().getCapacity() + "")
+        environment.setCapacity(Integer.parseInt(executor.getProperty(CAPACITY).orElse(
+                (environment.getCapacity() + "")
         )));
     }
 
     private void loadInstanceGroup(CommandExecutor executor) {
-        config.setGroupName(executor.getProperty(GROUP).orElse("default"));
+        environment.setGroupName(executor.getProperty(GROUP).orElse("default"));
     }
 
     private void loadInstanceName(CommandExecutor executor) {
-        if (config.getInstanceName() == null) {
-            config.setInstanceName(executor.getProperty(NAME)
+        if (environment.getInstanceName() == null) {
+            environment.setInstanceName(executor.getProperty(NAME)
                     .orElse(Environment.hostname()
                             .orElse("zapperfly." + UUID.randomUUID().toString().split("-")[0])));
         }

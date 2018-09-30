@@ -1,7 +1,7 @@
 package com.codingchili.zapperflyasm.model;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -26,6 +26,8 @@ public class BuildJob implements Storable {
     private String commit;
     private Status progress = Status.QUEUED;
     private String directory;
+    private String author;
+    private String fullCommit;
 
     public BuildJob() {
     }
@@ -88,8 +90,9 @@ public class BuildJob implements Storable {
         return config;
     }
 
-    public void setConfig(BuildConfiguration config) {
+    public BuildJob setConfig(BuildConfiguration config) {
         this.config = config;
+        return this;
     }
 
     /**
@@ -100,14 +103,16 @@ public class BuildJob implements Storable {
     }
 
     public void setProgress(Status progress) {
-        this.progress = progress;
+        if (!this.progress.isFinal()) {
+            this.progress = progress;
 
-        if (progress.equals(Status.DONE) || progress.equals(Status.FAILED) || progress.equals(Status.CANCELLED)) {
-            this.end = ZonedDateTime.now().toInstant().toEpochMilli();
-        }
+            if (progress.isFinal()) {
+                this.end = ZonedDateTime.now().toInstant().toEpochMilli();
+            }
 
-        if (saver != null) {
-            saver.accept(this);
+            if (saver != null) {
+                saver.accept(this);
+            }
         }
     }
 
@@ -147,11 +152,40 @@ public class BuildJob implements Storable {
      * @return the directory where the build is executing.
      */
     public String getDirectory() {
+        if (directory == null) {
+            String path = ZapperConfig.getEnvironment().getBuildPath();
+            if (!path.endsWith("/")) {
+                path = path + "/";
+            }
+            directory = path + id;
+        }
         return directory;
     }
 
     public void setDirectory(String directory) {
         this.directory = directory;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    /**
+     * @return the author of the commit.
+     */
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setFullCommit(String fullCommit) {
+        this.fullCommit = fullCommit;
+    }
+
+    /**
+     * @return the full commit hash that triggered the build.
+     */
+    public String getFullCommit() {
+        return fullCommit;
     }
 
     @Override

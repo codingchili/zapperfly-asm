@@ -3,6 +3,13 @@
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
 <link rel="import" href="build-card.html">
 <link rel="import" href="shared-styles.html">
 
@@ -13,7 +20,7 @@
             :host {
                 display: block;
                 width: 100%;
-                height: 128px;
+                height: 164px;
                 text-align: center;
             }
 
@@ -69,10 +76,30 @@
                 text-align: left;
             }
 
+            #filters {
+                bottom: 0px;
+                position: absolute;
+                margin: auto;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            #filter-repo {
+                margin-left: 8px;
+            }
+
+            #filter-branch {
+                margin-right: 8px;
+            }
+
         </style>
 
+        <app-location route="{{route}}" use-hash-as-path></app-location>
+        <app-route route="{{route}}" pattern="/:repository/:branch" data="{{routeData}}" tail="{{subroute}}"></app-route>
+
         <paper-card elevation="1">
-            <h4>Zapperfly build server 1.0.4</h4>
+            <h4>Zapperfly build server 1.1.0</h4>
 
             <span class="joke">[[joke]]</span>
             <span class="date">[[time]]</span>
@@ -85,6 +112,36 @@
                     <iron-icon on-click="_loginDialog" class="icon" icon="icons:power-settings-new"></iron-icon>
                 </template>
                 <iron-icon on-click="_about" class="icon" icon="icons:info-outline"></iron-icon>
+            </div>
+
+            <!-- todo get values, todo include reset/any.-->
+
+            <div id="filters">
+                <!-- repository filter -->
+                <paper-dropdown-menu id="filter-repo" label="Repository" on-iron-select="_onRepoChanged">
+                    <paper-listbox id="repositories" slot="dropdown-content" attr-for-selected="name"
+                                   selected="{{routeData.repository}}">
+
+                        <paper-item name="any">any</paper-item>
+
+                        <template id="repositoryTemplate" is="dom-repeat" items="[[repositories]]">
+                            <paper-item name="[[item]]">[[item]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+
+                <!-- branch filter -->
+                <paper-dropdown-menu id="filter-branch" label="Branch" on-iron-select="_onBranchChanged">
+                    <paper-listbox id="branches" slot="dropdown-content" attr-for-selected="name"
+                                   selected="{{routeData.branch}}">
+
+                        <paper-item name="any">any</paper-item>
+
+                        <template id="branchTemplate" is="dom-repeat" items="[[branches]]">
+                            <paper-item name="[[item]]">[[item]]</paper-item>
+                        </template>
+                    </paper-listbox>
+                </paper-dropdown-menu>
             </div>
 
         </paper-card>
@@ -105,6 +162,25 @@
                 <hr>
                 CHANGELOG
                 <br>
+
+                1.1.0
+                <ul>
+                    <li>support for plugins.</li>
+                    <li>new plugin: update bitbucket with build status.</li>
+                    <li>new plugin: notifyCommit API that matches the jenkins plugin.</li>
+                    <li>now displaying the commit author on build cards.</li>
+                    <li>support for cancelling builds.</li>
+                    <li>support for scheduling builds from the logger.</li>
+                    <li>improved log scrolling: pauses auto scroll when not at scrollTop</li>
+                    <li>now displaying the commit author on build cards.</li>
+                    <li>remembers the login token across page reloads.</li>
+                    <li>server side filters to filter on repository and branch.</li>
+                    <li>client side filters to filter on author, commit message, etc.</li>
+                    <li>added hot-linking to builds and a copy url to clipboard.</li>
+                    <li>no longer need a repo/branch to run shell scripts.</li>
+                    <li>display which user that scheduled a build in the queue.</li>
+                    <li>possible to setup multiple configurations for a single branch.</li>
+                </ul>
 
                 1.0.4
                 <ul>
@@ -134,7 +210,9 @@
                     <li>added input validation for build configuration.</li>
                     <li>split the queue list API from the build list API.</li>
                     <li>support newline in logs and improved grouping of log messages.</li>
-                    <li>support building without passing the buildscript over the shell (uses a file for docker builds)</li>
+                    <li>support building without passing the buildscript over the shell (uses a file for docker
+                        builds)
+                    </li>
                     <li>fixed - full build output was not captured.</li>
                 </ul>
                 <hr>
@@ -194,7 +272,6 @@
             </div>
         </paper-dialog>
 
-
         <paper-dialog id="configure" with-backdrop>
             <iron-icon on-click="_logout" class="icon" icon="icons:power-settings-new"></iron-icon>
             <h2>Configuration</h2>
@@ -246,6 +323,10 @@
                    on-response="_onConfig" debounce-duration="300">
         </iron-ajax>
 
+        <iron-ajax id="filterLoader" method="post" url="/api/?target=config&route=filters" handle-as="json"
+                   on-response="_onFilters" debounce-duration="300" auto>
+        </iron-ajax>
+
         <iron-ajax id="loginRequest"
                    url="/api/?target=authentication&route=login&username=[[username]]&password=[[password]]"
                    handle-as="json"
@@ -280,11 +361,25 @@
             }, 10000);
         }
 
+        ready() {
+            super.ready();
+            if (!this.route.path) {
+                this.set('route.path', "/any/any/");
+            }
+
+            application.onAuthenticated(() => {
+                this._load();
+            });
+
+            this._onResumeSession();
+        }
+
         _about() {
             this.$.about.open();
         }
 
         _logout() {
+            localStorage.removeItem('authentication');
             this.authenticated = false;
             this.$.configure.close();
             application.logout();
@@ -304,12 +399,17 @@
             }
         }
 
+        _onResumeSession() {
+            let authentication = JSON.parse(localStorage.getItem('authentication'));
+            if (authentication) {
+                this._setAuthenticated(authentication);
+            }
+        }
+
         _onLogin(event, request) {
             if (request.response.status === ACCEPTED) {
-                application.authenticated(request.response);
-                this.authenticated = true;
-                this.user = application.token.domain;
-                this.role = application.token.properties['role'];
+                this._setAuthenticated(request.response);
+                localStorage.setItem('authentication', JSON.stringify(request.response));
                 this.$.login.close();
             } else {
                 this.password = '';
@@ -318,14 +418,54 @@
             }
         }
 
+        _setAuthenticated(response) {
+            application.authenticated(response);
+            this.authenticated = true;
+            this.user = application.token.domain;
+            this.role = application.token.properties['role'];
+        }
+
         _configure() {
+            this._load();
+            this.$.configure.open();
+        }
+
+        _load() {
             this.$.configLoader.body = JSON.stringify({
                 token: application.token,
                 target: 'config',
                 route: 'cluster'
             });
             this.$.configLoader.generateRequest();
-            this.$.configure.open();
+        }
+
+        _onFilters(event, request) {
+            this.filter = request.response.repositories;
+            if (this.filter) {
+                this.set('repositories', Object.keys(this.filter));
+            }
+        }
+
+        _onRepoChanged(e) {
+            let repository = e.target.selectedItem.innerText;
+            this.set('repository', repository);
+            this.set('branch', 'any');
+            if (this.filter) {
+                this.set('branches', this.filter[repository]);
+                this._requestHistoryUpdate();
+            }
+        }
+
+        _onBranchChanged(e) {
+            this.set('branch', e.target.selectedItem.innerText);
+            this._requestHistoryUpdate();
+        }
+
+        _requestHistoryUpdate() {
+            application.publish('onFiltersChanged', {
+                repository: this.repository,
+                branch: this.branch
+            });
         }
 
         _updateTime() {
@@ -342,6 +482,4 @@
     }
 
     window.customElements.define(BuildStats.is, BuildStats);
-
-
 </script>

@@ -17,6 +17,9 @@ class Application {
     }
 
     onAuthenticated(callback) {
+        if (this.loggedin) {
+            callback(this.token);
+        }
         this.subscribe('authenticated', callback);
     }
 

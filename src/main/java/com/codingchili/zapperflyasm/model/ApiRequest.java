@@ -11,7 +11,7 @@ import com.codingchili.core.protocol.Serializer;
  * Maps requests to ease retrieval of attributes in the API.
  */
 public class ApiRequest implements RequestWrapper {
-    public static final String ID_BUILD = "id";
+    public static final String ID = "id";
     public static final String ID_CONFIG = "config";
     public static final String ID_REPO = "repository";
     public static final String ID_BRANCH = "branch";
@@ -33,7 +33,14 @@ public class ApiRequest implements RequestWrapper {
      * @return the id of the build the request regards.
      */
     public String getBuildId() {
-        return data().getString(ID_BUILD);
+        return data().getString(ID);
+    }
+
+    /**
+     * @return the id of a configuration.
+     */
+    public String getConfigId() {
+        return data().getString(ID);
     }
 
     /**
@@ -57,8 +64,12 @@ public class ApiRequest implements RequestWrapper {
 
         config.sanitize();
 
+        // only require the other if we have at least one, allow jobs to execute without a repo.
+        if (!config.getBranch().isEmpty()) {
+            require("branch", config.getBranch());
+        }
+
         require("repository", config.getRepository());
-        require("branch", config.getBranch());
         require("cmdline", config.getCmdLine());
 
         return config;

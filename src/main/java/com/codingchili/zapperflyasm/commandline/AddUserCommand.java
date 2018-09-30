@@ -1,6 +1,6 @@
 package com.codingchili.zapperflyasm.commandline;
 
-import com.codingchili.zapperflyasm.controller.Authenticator;
+import com.codingchili.zapperflyasm.handler.Authenticator;
 import com.codingchili.zapperflyasm.model.User;
 import io.vertx.core.Future;
 
@@ -24,26 +24,32 @@ public class AddUserCommand implements Command {
     @Override
     public void execute(Future<CommandResult> future, CommandExecutor executor) {
         if (executor.hasProperty(NAME)) {
+            CoreContext context = new SystemContext();
+
+
             User user = new User()
                     .setUsername(executor.getProperty(NAME).orElse(""))
-                    .setPassword(new HashFactory(null).hash(
-                            executor.getProperty(PASS).orElseGet(() -> {
-                                String password = SecretFactory.generate(24);
-                                logger.log(String.format("generated password '%s'.", password));
-                                return password;
-                            })))
                     .setRole(executor.getProperty(ROLE).orElseGet(() -> {
                         String role = RoleMap.USER;
                         logger.log("using default role '" + role + "'.");
                         return role;
                     }));
 
-            Authenticator.addUserToConfiguration(user);
-            logger.log("created user '" + user.getUsername() + "'.");
+            new HashFactory(context).hash(
+                    executor.getProperty(PASS).orElseGet(() -> {
+                        String password = SecretFactory.generate(24);
+                        logger.log(String.format("generated password '%s'.", password));
+                        return password;
+                    })).setHandler(done -> {
+                Authenticator.addUserToConfiguration(user);
+                logger.log("created user '" + user.getUsername() + "'.");
+                future.complete(CommandResult.SHUTDOWN);
+                context.close();
+            });
         } else {
             logger.log("--name <userName> is required.");
+            future.complete(CommandResult.SHUTDOWN);
         }
-        future.complete(CommandResult.SHUTDOWN);
     }
 
     @Override

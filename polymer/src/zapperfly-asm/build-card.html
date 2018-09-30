@@ -41,9 +41,17 @@
                 position: absolute;
                 left: 12px;
                 right: 18px;
+                margin-right: 20%; /* to make room for the author */
                 margin-top: 4px;
                 font-size: 0.90em;
                 opacity: 0.85;
+            }
+
+            .author {
+                right: 8px;
+                position: absolute;
+                margin-top: 8px;
+                font-size: 0.8em;
             }
 
             .branch {
@@ -62,10 +70,10 @@
                 opacity: 0.50;
             }
 
-           .title {
+            .title {
                 text-align: center;
                 display: block;
-           }
+            }
 
             .icon {
                 max-width: 18px;
@@ -138,10 +146,13 @@
                 [[build.commit]]
             </div>
             <div class="message">
-                [[build.message]]
+                {{_messageOrScript(build)}}
+            </div>
+            <div class="author" style$="color: {{_authorColor(build)}}">
+                [[build.author]]
             </div>
             <div class="branch">
-                [[build.config.branch]]@{{_trimRepo(build.config.repository)}}
+                {{_displayName(build.config)}}
             </div>
 
             <div class="elapsed">
@@ -159,10 +170,11 @@
 
             <template is="dom-if" if="{{_cancellable(build)}}">
                 <div id="cancel" class="cancel">
-                    <iron-icon class="icon" icon="icons:close"></iron-icon>
+                    <!-- hide the icon until stopping builds are supported. -->
+                    <!--<iron-icon class="icon" icon="icons:close"></iron-icon>
                     <paper-tooltip for="cancel" position="bottom" animation-delay="0">
                         cancels the build
-                    </paper-tooltip>
+                    </paper-tooltip>-->
                 </div>
             </template>
 
@@ -192,6 +204,17 @@
             }, 1000);
         }
 
+        _authorColor(build) {
+            let author = build.author;
+            let deg = 0;
+
+            for (let i in author) {
+                deg += author.charCodeAt(i);
+            }
+            let hue = deg % 360;
+            return "hsla(" + hue + ",50%, 50%, 0.8)";
+        }
+
         _cancellable(build) {
             let progress = build.progress;
             return (progress === 'CLONING' || progress === 'BUILDING' || progress === 'QUEUED');
@@ -215,6 +238,22 @@
 
         _toLower(string) {
             return string.toLowerCase();
+        }
+
+        _displayName(config) {
+            if (config.branch === '') {
+                return config.repositoryName;
+            } else {
+                return config.repositoryName + '@' + config.branch;
+            }
+        }
+
+        _messageOrScript(build) {
+            if (build.config.branch === '') {
+                return build.config.cmdLine.substring(0, Math.min(64, build.config.cmdLine.length));
+            } else {
+                return build.message;
+            }
         }
 
         _trimRepo(string) {

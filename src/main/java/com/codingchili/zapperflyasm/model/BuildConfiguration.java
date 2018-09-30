@@ -1,7 +1,6 @@
 package com.codingchili.zapperflyasm.model;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import com.codingchili.core.context.CoreRuntimeException;
@@ -14,13 +13,14 @@ import com.codingchili.core.storage.Storable;
  */
 public class BuildConfiguration implements Storable {
     private static final Pattern safe = Pattern.compile("[0-9A-Za-z-./_]+");
-    private static final Pattern urlsafe = Pattern.compile("(ssh|(htt(p|ps)))://[0-9A-Za-z/._:@-]+");
+    private static final Pattern urlsafe = Pattern.compile("((ssh|(htt(p|ps)))://[0-9A-Za-z/._:@-]+)|[a-zA-Z0-9 ]+");
     private List<String> outputDirs = Arrays.asList("out", "build", "target");
+    private String id = UUID.randomUUID().toString();
     private boolean autoclean = false;
     private String dockerImage = "";
-    private String repository = "";
-    private String branch = "";
+    private String repository = "script";
     private String cmdLine = "";
+    private String branch = "";
 
     public BuildConfiguration() {
     }
@@ -68,6 +68,19 @@ public class BuildConfiguration implements Storable {
     }
 
     /**
+     * @return the short name of the repository, url safe.
+     */
+    public String getRepositoryName() {
+        if (!repository.isEmpty() && repository.contains("/")) {
+            String repositoryName = repository.substring(repository.lastIndexOf("/"), repository.length());
+            repositoryName = repositoryName.replaceFirst("/", "");
+            return repositoryName;
+        } else {
+            return repository;
+        }
+    }
+
+    /**
      * @return the name of the docker image to run the build inside.
      */
     public String getDockerImage() {
@@ -101,18 +114,12 @@ public class BuildConfiguration implements Storable {
      * @return the unique id of the configuration.
      */
     public String getId() {
-        return toKey(repository, branch);
+        return id;
     }
 
-    /**
-     * Converts the given repo and branch into a unique identifier for the config.
-     *
-     * @param repository the name of the repository.
-     * @param branch     the name of the branch.
-     * @return a unique key.
-     */
-    public static String toKey(String repository, String branch) {
-        return repository + "@" + branch;
+    public BuildConfiguration setId(String id) {
+        this.id = id;
+        return this;
     }
 
     /**
