@@ -2,7 +2,7 @@
 users:
 - role: "user"
   username: "test"
-  password: "$argon2i$v=19$m=8192,t=1,p=4$DywdT6F7o8phbrsXB1HoFw$ACBbePsTMLeOyavn0ldobUnleSqC1S4Daytgmaqqhjk"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$rY9ud8apKhYIN0jHX0jL+Q$aQN647bSnieMQ0OqWQlOU92rcvs0xzKyNy+EX3Gs2E0"
 - role: "admin"
   username: "root"
   password: "$argon2i$v=19$m=8192,t=1,p=4$rplsqTZrrcbLzc7R7NuVIg$3NSJssOIEva636AGyQ4NoQi69JbbqiemqmAhPLX8ryQ"
@@ -10,7 +10,7 @@ users:
   username: "test1"
 - role: "user"
   username: "user"
-  password: "$argon2i$v=19$m=8192,t=1,p=4$5uDjk9ReyVCsBC4Loen0YA$VwrYeOIVdExdnVgixeeXgVUZNEMAZ3mkzLkqs/eS5Uk"
+  password: "$argon2i$v=19$m=8192,t=1,p=4$fIEZsCJZE2tTOtetW2mTpw$bgOsbYS/pmWmm3O/dsoiELmM2OcUP9Li4CyvKqfCiak"
 integrations:
   com.codingchili.zapperflyasm.integration.jenkins.WebhookNotifyCommit:
     whitelist:

@@ -117,8 +117,9 @@ public class BuildConfiguration implements Storable {
         return id;
     }
 
-    public void setId(String id) {
+    public BuildConfiguration setId(String id) {
         this.id = id;
+        return this;
     }
 
     /**

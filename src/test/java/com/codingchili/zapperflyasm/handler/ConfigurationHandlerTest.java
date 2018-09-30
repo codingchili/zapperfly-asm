@@ -51,6 +51,7 @@ public class ConfigurationHandlerTest {
         Async async = test.async();
 
         BuildConfiguration config = new BuildConfiguration();
+        config.setId("test");
         config.setRepository("https://repo/");
         config.setBranch("br_test");
         config.setCmdLine("./build");
@@ -62,8 +63,7 @@ public class ConfigurationHandlerTest {
                 test.assertEquals(ACCEPTED, status);
                 async.complete();
             }, new JsonObject()
-                    .put(ID_REPO, config.getRepository())
-                    .put(ID_BRANCH, config.getBranch())));
+                    .put(ID, "test")));
         };
 
         // configure the build.

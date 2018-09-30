@@ -3,8 +3,6 @@ package com.codingchili.zapperflyasm.building;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import io.vertx.core.Future;
 
-import java.util.function.Supplier;
-
 /**
  * @author Robin Duda
  *

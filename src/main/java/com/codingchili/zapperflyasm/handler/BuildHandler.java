@@ -1,9 +1,8 @@
 package com.codingchili.zapperflyasm.handler;
 
 import com.codingchili.zapperflyasm.ZapperContext;
-import com.codingchili.zapperflyasm.model.*;
-import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.building.BuildManager;
+import com.codingchili.zapperflyasm.model.*;
 import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import com.codingchili.core.listener.CoreHandler;
 import com.codingchili.core.listener.Request;
 import com.codingchili.core.protocol.*;
 
-import static com.codingchili.core.configuration.CoreStrings.throwableToString;
 import static com.codingchili.core.protocol.RoleMap.*;
 import static com.codingchili.zapperflyasm.model.ApiRequest.*;
 

@@ -30,4 +30,9 @@ public class BuildExecutorMock implements BuildExecutor {
         }
         return future;
     }
+
+    @Override
+    public Future<Void> cancel(String id) {
+        return Future.succeededFuture();
+    }
 }
