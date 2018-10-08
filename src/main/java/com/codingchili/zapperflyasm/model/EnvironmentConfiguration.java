@@ -14,7 +14,7 @@ public class EnvironmentConfiguration {
     private String dockerLine = "docker run -w /tmp/build/ -v '$directory:/tmp/build' --rm $image /tmp/build/$script";
     private String groupName = "zapperfly-builds";
     private String windowsShell = "powershell.exe -Command";
-    private String unixShell = "/bin/bash -E";
+    private String unixShell = "/bin/sh -c";
     private String instanceName = null;
     private int capacity = 2;
 
