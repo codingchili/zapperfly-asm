@@ -9,7 +9,11 @@ MAINTAINER codingchili@github
 
 RUN mkdir -p /opt/zapper/
 COPY ./ /opt/zapper/
-RUN cd /opt/zapper && unzip ./* && rm *.zip
+
+RUN apk add git && \
+    cd /opt/zapper && \
+    unzip ./* && \
+    rm *.zip
 
 EXPOSE 443/tcp
 
@@ -17,4 +21,4 @@ EXPOSE 443/tcp
 # multicast discovery. For additional containers increase external port.
 # example, 5702:5701, 5703:5701 etc.
 
-ENTRYPOINT ["/bin/sh", "-c", "cd /opt/zapper && ./zapperfly.sh --user --name root --pass $ZAPPER_PWD && ./zapperfly.sh --start --website"]
+ENTRYPOINT ["/bin/sh", "-c", "cd /opt/zapper && ./zapperfly.sh --user --role admin --name root --pass $ZAPPER_PWD && ./zapperfly.sh --start --website"]

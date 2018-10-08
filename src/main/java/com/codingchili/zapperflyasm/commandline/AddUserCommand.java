@@ -26,7 +26,6 @@ public class AddUserCommand implements Command {
         if (executor.hasProperty(NAME)) {
             CoreContext context = new SystemContext();
 
-
             User user = new User()
                     .setUsername(executor.getProperty(NAME).orElse(""))
                     .setRole(executor.getProperty(ROLE).orElseGet(() -> {
@@ -41,7 +40,7 @@ public class AddUserCommand implements Command {
                         logger.log(String.format("generated password '%s'.", password));
                         return password;
                     })).setHandler(done -> {
-                Authenticator.addUserToConfiguration(user);
+                Authenticator.addUserToConfiguration(user.setPassword(done.result()));
                 logger.log("created user '" + user.getUsername() + "'.");
                 future.complete(CommandResult.SHUTDOWN);
                 context.close();
