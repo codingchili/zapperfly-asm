@@ -7,8 +7,10 @@ import io.vertx.core.Future;
 import java.io.*;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.codingchili.core.context.CoreContext;
 import com.codingchili.core.context.CoreRuntimeException;
@@ -25,14 +27,14 @@ public class AsyncProcess {
     private int timeout = ZapperConfig.getEnvironment().getTimeoutSeconds();
     private CoreContext core;
     private Logger logger;
-    private String[] command;
+    private String command;
     private Process process;
 
     /**
      * @param core the core context for which the util schedules async tasks.
      */
     public AsyncProcess(CoreContext core, String command) {
-        this.command = (getShell() + command).split(" ");
+        this.command = command;
         this.core = core;
         this.logger = core.logger(getClass());
     }
@@ -61,16 +63,21 @@ public class AsyncProcess {
      */
     public AsyncProcess start(String directory) {
         try {
-            process = new ProcessBuilder(command)
+            List<String> cmd  = Arrays.stream(getShell().split(" "))
+                    .collect(Collectors.toList());
+
+            cmd.add(command);
+
+            process = new ProcessBuilder().command(cmd)
                     .directory(new File(directory))
                     .start();
         } catch (IOException e) {
-            throw new CoreRuntimeException(e.getMessage());
+            throw new CoreRuntimeException("Failed to start process.'", e);
         }
         return this;
     }
 
-    String nextLine = "";
+    private String nextLine = "";
 
     /**
      * Reads the output of a process on both the stdout and stderr. The output
@@ -178,10 +185,10 @@ public class AsyncProcess {
         String os = System.getProperty("os.name");
 
         if (os.toLowerCase().contains("windows")) {
-            return ZapperConfig.getEnvironment().getWindowsShell() + " ";
+            return ZapperConfig.getEnvironment().getWindowsShell();
         } else {
             // assume bash exists on unix.
-            return ZapperConfig.getEnvironment().getUnixShell() + " ";
+            return ZapperConfig.getEnvironment().getUnixShell();
         }
     }
 

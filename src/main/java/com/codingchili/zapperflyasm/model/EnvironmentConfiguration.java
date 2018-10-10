@@ -1,5 +1,7 @@
 package com.codingchili.zapperflyasm.model;
 
+import java.io.File;
+
 import com.codingchili.core.security.SecretFactory;
 
 /**
@@ -10,7 +12,7 @@ import com.codingchili.core.security.SecretFactory;
 public class EnvironmentConfiguration {
     private Integer timeoutSeconds = 300;
     private String tokenSecret = SecretFactory.generate(48);
-    private String buildPath = "builds/";
+    private String buildPath = new File("").toPath().toAbsolutePath().toString().replaceAll("\\\\", "/") + "/builds/";
     private String dockerLine = "docker run -w /tmp/build/ -v '$directory:/tmp/build' --rm $image /tmp/build/$script";
     private String groupName = "zapperfly-builds";
     private String windowsShell = "powershell.exe -Command";
@@ -80,7 +82,7 @@ public class EnvironmentConfiguration {
     }
 
     /**
-     * @return the shell to use when executing on unix., example "/bin/bash -E"
+     * @return the shell to use when executing on unix., example "/bin/bash -c"
      */
     public String getUnixShell() {
         return unixShell;

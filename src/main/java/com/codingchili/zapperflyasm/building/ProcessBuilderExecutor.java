@@ -62,7 +62,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
 
         executor.executeBlocking(blocking -> {
             job.setProgress(Status.BUILDING);
-            logEvent("buildBegin", job);
+            logEvent("build.begin", job);
             try {
                 String command = createCommand(job);
                 job.log(command);
@@ -119,7 +119,7 @@ public class ProcessBuilderExecutor implements BuildExecutor {
     private void onError(BuildJob job, Throwable error) {
         job.setProgress(Status.FAILED);
         job.log("Build failed: " + error.getMessage());
-        logger.event("buildError")
+        logger.event("build.error")
                 .put("build", job.getDirectory())
                 .put("branch", job.getConfig().getBranch())
                 .put("repo", job.getConfig().getRepository())
@@ -130,12 +130,12 @@ public class ProcessBuilderExecutor implements BuildExecutor {
 
     private void onTimeout(BuildJob job) {
         job.setProgress(Status.FAILED);
-        logEvent("buildTimeout", job);
+        logEvent("build.timeout", job);
         job.log("Build timed out after " + ZapperConfig.getEnvironment().getTimeoutSeconds() + "s.");
     }
 
     private void onSuccess(BuildJob job) {
-        logEvent("buildComplete", job);
+        logEvent("build.complete", job);
         job.setProgress(Status.DONE);
         job.log("Build completed successfully.");
     }

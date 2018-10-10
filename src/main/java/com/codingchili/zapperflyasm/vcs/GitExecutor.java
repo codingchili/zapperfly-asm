@@ -219,24 +219,24 @@ public class GitExecutor implements VersionControlSystem {
     }
 
     private void onCloned(BuildJob job) {
-        event(job, "cloneComplete")
+        event(job, "clone.complete")
                 .put("directory", job.getDirectory())
                 .send();
     }
 
     private void onHead(BuildJob job) {
-        event(job, "headComplete")
+        event(job, "head.complete")
                 .put("message", job.getMessage())
                 .put("commit", job.getCommit())
                 .send();
     }
 
     private void onBegin(BuildJob job) {
-        event(job, "onCloneBegin").send();
+        event(job, "clone.begin").send();
     }
 
     private void onError(BuildJob job, Throwable e) {
-        event(job, "cloneFailed")
+        event(job, "clone.failed")
                 .put("error", throwableToString(e))
                 .send();
     }

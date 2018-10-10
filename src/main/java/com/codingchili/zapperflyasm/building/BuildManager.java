@@ -3,7 +3,6 @@ package com.codingchili.zapperflyasm.building;
 import com.codingchili.zapperflyasm.ZapperContext;
 import com.codingchili.zapperflyasm.model.BuildJob;
 import com.codingchili.zapperflyasm.model.InstanceInfo;
-import com.codingchili.zapperflyasm.model.BuildConfiguration;
 import com.codingchili.zapperflyasm.logging.LogEvent;
 import io.vertx.core.Future;
 
