@@ -99,7 +99,7 @@
         <app-route route="{{route}}" pattern="/:repository/:branch" data="{{routeData}}" tail="{{subroute}}"></app-route>
 
         <paper-card elevation="1">
-            <h4>Zapperfly build server 1.1.0</h4>
+            <h4>Zapperfly build server 1.1.1</h4>
 
             <span class="joke">[[joke]]</span>
             <span class="date">[[time]]</span>
@@ -163,6 +163,15 @@
                 CHANGELOG
                 <br>
 
+                1.1.1
+                <ul>
+                    <li>when running the command to add users, the password was not being saved.</li>
+                    <li>commandline was not parsed correctly for unix / docker builds.</li>
+                    <li>use absolute paths when mounting a volume in docker. (support newer docker version)</li>
+                    <li>logging events are now lowercase separated with dot, example: 'buildComplete' -> 'build.complete'.</li>
+                </ul>
+
+                <hr>
                 1.1.0
                 <ul>
                     <li>support for plugins.</li>
@@ -182,6 +191,7 @@
                     <li>possible to setup multiple configurations for a single branch.</li>
                 </ul>
 
+                <hr>
                 1.0.4
                 <ul>
                     <li>fix content type for requests to allow double ampersand.</li>
