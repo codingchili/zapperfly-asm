@@ -6,6 +6,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#212121",
+  "theme_color": "#00b8d4",
   "icons": [{
     "src": "fly-192.png",
     "sizes": "192x192",

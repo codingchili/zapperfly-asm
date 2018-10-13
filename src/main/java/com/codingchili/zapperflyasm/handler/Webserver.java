@@ -53,13 +53,15 @@ public class Webserver implements CoreListener {
         Router router = Router.router(core.vertx());
         router.route().handler(BodyHandler.create());
 
+        settings.getHttpOptions().setCompressionSupported(true);
         settings.setBasePath("/api");
         router.route("/api/*").handler(route -> {
             handler.handle(new RestRequest(route, settings));
         });
 
         router.route("/*").handler(StaticHandler.create()
-                .setCachingEnabled(false)
+                .setCacheEntryTimeout(3600)
+                .setCachingEnabled(true)
                 .setWebRoot(POLYMER));
 
         core.vertx().createHttpServer(settings.getHttpOptions())
