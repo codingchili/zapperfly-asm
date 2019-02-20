@@ -90,3 +90,5 @@ See: LICENSE.md
 
 # Contributing
 pull requests, code reviews, feature suggestions and more welcome. :smile_cat:  :cherry_blossom:
+
+[![donate](https://img.shields.io/badge/donate-%CE%9ETH%20/%20%C9%83TC-ff00cc.svg?style=flat&logo=ethereum)](https://commerce.coinbase.com/checkout/673e693e-be6d-4583-9791-611da87861e3)
