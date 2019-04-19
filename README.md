@@ -8,12 +8,12 @@ Extra-simple clustered build servers for continuous integration. Minimal configu
 Download the latest release from [releases](https://github.com/codingchili/zapperfly-asm/releases), unpack where you want to run it.
 
 ##### To save the default configuration to file (optional)
-```
+```console
 ./zapperfly --configure
 ```
 
 ##### Add users with the following command.
-```
+```console
 ./zapperfly --user --name <userName> --pass <userPassword> --role <admin|user>
 ```
 
@@ -23,7 +23,7 @@ Download the latest release from [releases](https://github.com/codingchili/zappe
 
 
 ##### To start it all up, run the following on each host.
-```
+```console
 ./zapperfly --start --group <groupName> --name <instanceName> --website <port, default 443>
 ```
 
@@ -34,7 +34,7 @@ Download the latest release from [releases](https://github.com/codingchili/zappe
 --website: starts the graphical user interface on port 443, or the specified port.
 
 ##### If you want to build it yourself, clone this repository with git and run:
-```
+```console
 ./gradlew archiveZip
 ```
 
@@ -42,12 +42,12 @@ Download the latest release from [releases](https://github.com/codingchili/zappe
 
 Run the following command to build the docker image
 
-```
+```console
 gradlew archiveZip && docker build -f Dockerfile build/distributions
 ```
 
 Running the container
-```
+```console
 docker run -it -p 5701:5701 -e ZAPPER_PWD=secret <image-id>
 ```
 
